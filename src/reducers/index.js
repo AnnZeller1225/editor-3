@@ -3,17 +3,7 @@ import cloneDeep from "lodash/cloneDeep";
 const initialState = {
     project_1: {
         surfaces: [
-            // {
-            //     id: "1",
-            //     name: "Стол круглый",
-            //     type: "MODEL",
-            //     url: "./models/table_03.glb",
-            //     dots: { x: "1", y: "0", z: "0" },
-            //     rotate: 0,
-            //     moveOnly: "XZ",
-            //     visible: true,
-            //     locked: true,
-            // },
+   
             {
                 id: "4",
                 name: "Стул красный",
@@ -37,7 +27,17 @@ const initialState = {
                 visible: true,
                 locked: false,
             },
-
+            // {
+            //     id: "1",
+            //     name: "Стол круглый",
+            //     type: "MODEL",
+            //     url: "./models/table_03.glb",
+            //     dots: { x: "1", y: "0", z: "0" },
+            //     rotate: 0,
+            //     moveOnly: "XZ",
+            //     visible: true,
+            //     locked: true,
+            // },
             // {
             //     id: "3",
             //     name: "Телевизор",

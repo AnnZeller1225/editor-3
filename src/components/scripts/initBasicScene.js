@@ -117,7 +117,7 @@ function isCollision(el, mas) {
             // проверка на пересечение
             var collision = firstBB.intersectsBox(secondBB);
             if (collision) {
-                console.log(' пересечение');
+                // console.log(' пересечение');
                 el.target.children[0].object.position.copy(
                     el.target.children[0].object.userData.currentPosition
                 );
