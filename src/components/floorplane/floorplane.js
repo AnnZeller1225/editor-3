@@ -50,6 +50,7 @@ let scene,
   updateUseEffectInstrum,
   updateUseEffectDelete,
   updateUseEffectListClick,
+  updateUseEffectTC,
   updateUseEffectLock,
   clock,
   cameraControls,
@@ -68,14 +69,18 @@ let scene,
 initGlobalLets();
 initUseEffects(); // список useEffect
 // initDispatchers()
-let selectWallDispatch, selectSurfaceDispatch, resetSelectedModelDispatch, changePositionModelDispatch, selectModelDispatch;
+let selectWallDispatch, selectSurfaceDispatch, resetSelectedModelDispatch, changePositionModelDispatch, selectModelDispatch, resetTCDispatch;
 let canvas = renderer.domElement;
 let clickManager = new InteractionManager(
   renderer,
   cameraPersp,
   renderer.domElement
 );
-let controlStatus = false;
+
+
+let clicked;
+// сделать сравнение пред модели и некст модели => равны = стрелки убрать
+
 // addTransformControl упростить, дублируется при каждом клике 
 // может сделать два отдельных диспатча для блокировки? потом соединить 
 // resetSelectedModel переименовать в resetSelectedActive - сброс стен и пола тоже
@@ -95,7 +100,9 @@ const FloorPlane = ({
   resetNewModel,
   modalForConfirm,
   resetSelectedModel,
-  resetLockModel, selectedInModelList, activeInList
+  resetLockModel, selectedInModelList, activeInList,
+  resetTransformControl,
+  resetTC
 }) => {
   const { surfaces } = project_1;
   cameraStatus = camera.status;
@@ -108,14 +115,16 @@ const FloorPlane = ({
   const [rotateModel, setRotateModel] = useState(null);
   const [cameraPanorama, setCameraPanorama] = useState(null);
   const [cameraDefault, setCameraDefault] = useState(null);
-
-
   const [changeTexture, setChangeTexture] = useState(null);
   const [changeTextureFloor, setChangeTextureFloor] = useState(null);
   const [resetInstr, setResetInstr] = useState(null);
   const [deleteModel, setDeleteModel] = useState(null);
   const [lockModel, setLockModel] = useState(null);
   const [clickListModel, setClickListModel] = useState(null);
+
+
+  const [resetingTC, setResetingTC] = useState(null);
+
 
   updateDispatches(); // локальные диспатчеры переносим в глобальные
   checkUpdateForReplace();
@@ -130,9 +139,8 @@ const FloorPlane = ({
   checkUpdateInstrum();
   checkUpdateDeleteModel();
   checkUpdateLockModel();
-
   checkUpdateClickListModel();
-
+  // checkUpdateResetTC(); // проверка на сброс стрелок без спроса action  - для убирания стрелок при повторном клике на модель
 
 
   // isSelected(activeInList.selectedModel)
@@ -191,7 +199,6 @@ const FloorPlane = ({
   // режим камеры - панорама
   useEffect(() => {
     if (camera.status === "panorama") {
-      console.log("panorama");
       changeMovingCamera(camera.status);
       updateUseEffectCameraPanorama = false;
       // resetCamera(changeStatusCamera);
@@ -214,18 +221,33 @@ const FloorPlane = ({
 
   // добавляем перемещение
   useEffect(() => {
-    if (activeObject.action === "drag" && updateUseEffectForDrag) {
-      showAxesControl(activeObject.action, control);
+    if (activeObject.action === "drag" && updateUseEffectForDrag ) {
+
       movingStatus = "drag";
+      showAxesControl(activeObject.action, control, activeObject, 'uf drag');
+
+      if(clicked) {
+        // console.log(' clicked ');
+        showAxesControl(null, control)
+        clicked = null 
+      }
+      // console.log(' uf drag ', activeObject.selectedModel?.id, TCModel_id);
     }
   }, [moveModel]);  // eslint-disable-line react-hooks/exhaustive-deps
   // добавляем вращение
   useEffect(() => {
     if (activeObject.action === "rotate") {
-      console.log('rotate UF');
+  
 
       showAxesControl(activeObject.action, control);
       movingStatus = "rotate";
+      console.log(clicked, 'cliced');
+      // console.log('rotate UF');
+      if (clicked) {
+        // console.log(' clicked rotate ');
+        showAxesControl(null, control)
+        clicked = null
+      }
     }
   }, [rotateModel]);  // eslint-disable-line react-hooks/exhaustive-deps
   // обновление текстуры для стен
@@ -326,12 +348,27 @@ const FloorPlane = ({
     if (
       activeInList.selectedModel?.id && updateUseEffectListClick
     ) {
-      console.log(' click model list UF');
+      // console.log(' click model list UF');
       updateUseEffectListClick = false;
       let root = findModel(scene.children, activeInList.selectedModel?.id);
       addHightLight(root)
+      // console.log(' uf list model ');
     }
   }, [clickListModel]);  // eslint-disable-line react-hooks/exhaustive-deps
+
+
+  // если нужно убрать только стрелки TC
+  useEffect(() => {
+    if (
+      activeObject.action &&
+      updateUseEffectTC && !activeObject.selectModel?.id
+    ) {
+      console.log(' resetTransformControlUF');
+      updateUseEffectTC = false;
+    // hideTransformControl(control);
+
+    }
+  }, [resetingTC]);  // eslint-disable-line react-hooks/exhaustive-deps
 
 
   function getChangeLock(mod) {
@@ -362,6 +399,7 @@ const FloorPlane = ({
     changePositionModelDispatch = changePositionModel;
     selectModelDispatch = selectModel;
     resetSelectedModelDispatch = resetSelectedModel;
+    resetTCDispatch = resetTC
   }
 
 
@@ -397,12 +435,20 @@ const FloorPlane = ({
   function checkUpdateForMovingModel() {
     if (
       activeObject.action === "drag" &&
-      updateUseEffectForDrag === false && !activeObject.selectedModel.locked
+      updateUseEffectForDrag === false && !activeObject.selectedModel.locked 
 
     ) {
       setMoveModel(moveModel + 1);
       updateUseEffectForDrag = true;
       updateUseEffectForRotate = false;
+      // if (clicked) {
+      //   console.log(' clicked');
+      // } else {
+      //   setMoveModel(moveModel + 1);
+      //   updateUseEffectForDrag = true;
+      //   updateUseEffectForRotate = false;
+      // }
+   
       // console.log(' is Moving in check');
     }
   }
@@ -500,19 +546,22 @@ const FloorPlane = ({
       updateUseEffectListClick = true;
     }
   }
+  function checkUpdateResetTC() {
+    if (
+      activeObject.action &&
+      !updateUseEffectTC && !activeObject.selectModel?.id
+    ) {
+      setResetingTC(resetingTC + 1)
+      updateUseEffectTC = true;
+    }
+  }
 
   return (
     <>
       <div ref={ref} />
-
       {
-
-      // console.count()
-      /* 
-      
-      
-       */}
-
+        // console.count()
+      }
     </>
   );
 };
@@ -527,7 +576,8 @@ const mapStateToProps = ({
   modal,
   activeObject,
   modalForConfirm,
-  activeInList
+  activeInList,
+  resetTransformControl
 }) => {
   return {
     project_1,
@@ -537,7 +587,8 @@ const mapStateToProps = ({
     camera,
     modal,
     activeObject,
-    modalForConfirm, activeInList
+    modalForConfirm, activeInList,
+    resetTransformControl
   };
 };
 
@@ -622,6 +673,9 @@ function loadModel(modelJson) {
     // выбивало ошибку при удалении моделей, делаем проверку на то, состоит ли в сцене модель
     if (root.parent && root.visible) {
       root.addEventListener("click", () => addHightLight(root));
+
+      // root.material.depthTest = false;
+      // root.renderOrder = 1;
       clickManager.add(root);
       checkCollisionModels.push(root);
       wallList.push(root);
@@ -632,28 +686,30 @@ function loadModel(modelJson) {
 }
 // реакция на клик модели => подсветка и transform control
 function addHightLight(root) {
-  console.log('addHightLight');
-  if (!controlStatus) {
-    if (root?.visible && root.parent && cameraStatus !== 'panorama') {
-      // console.log('addHightLight');
-      root.userData.click += 1;
+  // console.log(' start addHightLight');
+  // if (!controlStatus) {
+  if (root?.visible && root.parent && cameraStatus !== 'panorama') {
+    // console.log('addHightLight', root);
+    root.userData.click += 1;
+    // current = root;
 
+    highlightModel(root);
 
-      highlightModel(root);
+    if (!root.userData.locked) {
+      transformControledModel = root;
+      addTransformControl(root);
 
-      if (!root.userData.locked) {
-        transformControledModel = root;
-        addTransformControl(root);
-
-      } else {
-        console.log('elem blocked');
-      }
+    } else {
+      console.log('elem blocked');
     }
+    // }
     // controlStatus = false;
   } else {
-    // console.log(controlStatus, 'controlStatus true');
+    // controlStatus = false;
+    // console.log(' повторно вызываем addTC');
+    // делать проверку на пред модель и новую
+    // addHightLight(root)
   }
-  controlStatus = false
 
 }
 
@@ -723,6 +779,7 @@ function initUseEffects() {
   updateUseEffectDelete = false;
   updateUseEffectLock = false;
   updateUseEffectListClick = false;
+  updateUseEffectTC = false
 }
 function initGlobalLets() {
   scene = new THREE.Scene();
@@ -748,21 +805,22 @@ function initGlobalLets() {
 }
 
 // нельзя переносить
-const showAxesControl = (typeOfChange, control) => {
-  if (typeOfChange === "drag") {
-    updateUseEffectForDrag = false;
-    control.setMode("translate");
-    control.showY = false;
-    control.showX = true;
-    control.showZ = true;
-  } else if (typeOfChange === "rotate") {
-    updateUseEffectForRotate = false;
-    control.setMode("rotate");
-    hideTransformControl(control);
-    control.showY = true;
-  } else {
-    // console.log(' скрываем стрелки в show axes control');
-    hideTransformControl(control);
+const showAxesControl = (typeOfChange, control, obj, text) => {
+  // console.log(typeOfChange, 'typeOfChange', text, 'text');
+  // console.log(transformControledModel?.userData.name, obj.selectedModel );
+    if (typeOfChange === "drag") {
+      updateUseEffectForDrag = false;
+      control.setMode("translate");
+      control.showY = false;
+      control.showX = true;
+      control.showZ = true;
+    } else if (typeOfChange === "rotate") {
+      updateUseEffectForRotate = false;
+      control.setMode("rotate");
+      hideTransformControl(control);
+      control.showY = true;
+    } else {
+      hideTransformControl(control);
   }
 };
 
@@ -784,17 +842,16 @@ function addSelectedObject(object) {
 // ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ С ОБЪЕКТАМИ ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ С ОБЪЕКТАМИ ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ С ОБЪЕКТАМ И ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ С ОБЪЕКТАМИ ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ С ОБЪЕКТАМИ
 
 function addTransformControl(model) {
-  // 
-  // console.log(model);
-  // model.material.depthTest = false;
+
   if (model.parent && !model.userData.locked) {
-    // console.log('addTransformControl');
+    console.log('addTransformControl');
     // console.log(movingStatus, 'movingStatus tc');
     // console.log(model.userData.locked, 'locked in TC');
     model.userData.currentPosition = new THREE.Vector3();
     model.index = 100
+    // реагирует на все изменения 
     control.addEventListener("change", render);
-
+    // при перетягивании
     control.addEventListener(
       "objectChange",
       function (el) {
@@ -802,31 +859,26 @@ function addTransformControl(model) {
         el.target.children[0].object.userData.currentPosition.copy(
           el.target.children[0].object.position
         );
+        // console.log('objectChange');
       },
       false
     );
-    control.userData.name = "transformControl";
     control.addEventListener(
       "dragging-changed",
       (event) => onDraginigchange(event, model),
       false
     );
-    control.addEventListener(
-      "mouseDown",
-      () => console.log( ' mouse down Control')
-      // () => controlStatus = true
-    );
+    control.userData.name = "transformControl";
 
-    // control.addEventListener(
-    //   "click",
-    //   // () => console.log(' up  Control')
-    //   () => controlStatus = false
-    // );
 
     scene.add(control);
-    showAxesControl(movingStatus, control);
+    control.showX = false;
+    control.showY = false; 
+    control.showZ = false;
+    // console.log(movingStatus, 'movingStatus');
+    showAxesControl(movingStatus, control, 'add TC');
     control.attach(model);
-    clickManager.add(control);
+    // clickManager.add(control);
 
 
 
@@ -835,9 +887,10 @@ function addTransformControl(model) {
     // возмоно понадобится тут удалить стрелки хз как правда
     // showAxesControl(null);
   }
-}
 
-// отправляет данные в стор как то переименовать
+}
+let removeArrows = false;
+// отправляет данные в стор 
 function sendPosition(event, model) {
 
   model.userData.click = 2; // после переноса чтобы подсветка могла пропасть
@@ -858,7 +911,13 @@ function removeHightLight(model) {
   outlinePass.selectedObjects = selectedObjects;
   addSelectedObject(model);
   if (model.userData.type === 'MODEL') {
+    // нужно пробросить еще что-то в диспач, чтобы на него подвязать useeffect для сброса стрелок 
     resetSelectedModelDispatch();
+    hideTransformControl(control);
+    clicked = model.userData.id
+    // console.log('убираем стрелки ');
+    // removeArrows = true;
+    // resetTCDispatch(true);
   }
 }
 function removeHightLight_2(model) {
@@ -875,10 +934,11 @@ function removeHightLight_2(model) {
 }
 function highlightModel(model) {
   if (cameraStatus !== 'panorama') {
-
     // сделать доп проверку на то, что жто первый клик по модели, чтобы не перебирать лишний раз 
-    if (model.userData.type === 'MODEL') {
-      selectModelDispatch(model.userData)
+    if (model.userData.type === 'MODEL' && !model.userData.selected) {
+      // TCModel_id = model.userData.id
+      selectModelDispatch(model.userData);
+
     }
     // если клик не четный и если модель уже не была выбранна
     if (model.userData.click % 2 > 0 && model.userData.selected !== true) {
@@ -993,7 +1053,6 @@ function isClickForTC(ev) {
   console.log(ev.object);
   if (ev.object.type === 'Line') {
     console.log(' click по TC');
-    controlStatus = true;
 
   }
 }
@@ -1002,11 +1061,11 @@ function isClickForTC(ev) {
 function checkingClick() {
 
   raycaster.setFromCamera(mouse, cameraPersp);
-  var intersects = raycaster.intersectObjects(scene.children, true);
+  var intersects = raycaster.intersectObjects(wallList, true);
   if (intersects.length > 0) {
     let event = intersects[0];
     // isClickForTC(event)
-    // console.log(intersects);
+    // console.log(intersects, 'EVENT');
     // если это line то ...
 
     if (event.object.userData.type === "FLOOR_SHAPE") {
@@ -1032,7 +1091,12 @@ function checkingClick() {
       // root.userData.click += 1;
       // highlightModel(root, null);
     } else {
-      // console.log("event exception  ");
+
+
+      // console.log(event, ' exse');
+      // current.userData.click = 0;
+      // addHightLight(current)
+      // console.log("event exception  ", current.userData.click);
     }
 
   }
@@ -1042,12 +1106,16 @@ function checkingClick() {
 // РАЗОБРАТЬСЯ С ТЕМ КАК ПРИВЯЗАНЫ СОБЫТИЯ ВНУТРИ КОМПОНЕНТА - ОНИ ПРИ ПЕРЕРЕНДЕРЕ ЗАНОВО ПОДВЯЗЫВВАЮТСЯ?
 control.addEventListener("mouseUp", (event) => sendPosition(event, transformControledModel));
 window.addEventListener("resize", onWindowResize);
-canvas.addEventListener("mousedown", onClick);
+canvas.addEventListener("click", onClick);
 
 
 
 
-
+// control.addEventListener(
+//   "click",
+//   () => console.log(' click  Control')
+//   // () => controlStatus = false
+// );
 
 
 

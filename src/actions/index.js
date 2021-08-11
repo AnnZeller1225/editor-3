@@ -133,3 +133,10 @@ export const selectedInModelList = (payload) => {
     payload: payload,
   };
 };
+
+export const resetTC = (payload) => {
+  return {
+    type: "RESET_TC",
+    payload: payload,
+  };
+};

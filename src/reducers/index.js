@@ -382,6 +382,7 @@ const initialState = {
         isOpen: false,
         confirmed: false
     },
+    resetTransformControl: false
 };
 
 
@@ -541,7 +542,7 @@ const resetSelectedModel = (state) => {
         ...state,
         activeObject: {
             ...activeObject,
-            action: '',
+            // action: '',
             selectedModel: {},
             wall: '',
             surface: {},
@@ -827,6 +828,14 @@ const selectedInModelList = (state, payload) => {
 
 
 }
+const resetTC = (state, payload)=> {
+    const { resetTransformControl} = state;
+
+    return {
+        ...state,
+        resetTransformControl: payload
+    }
+}
 
 const reducer = (state = initialState, action) => {
     switch (action.type) {
@@ -872,7 +881,8 @@ const reducer = (state = initialState, action) => {
             return resetLockModel(state);
         case "SELECTED_IN_MODELLIST":
             return selectedInModelList(state, action.payload);
-
+        case "RESET_TC":
+            return resetTC(state, action.payload);
         default:
             return state;
     }

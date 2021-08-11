@@ -241,7 +241,6 @@ function hideTransformControl(control) {
     control.showX = false;
     control.showY = false;
     control.showZ = false;
-    // console.log(' скрыли стрелки');
 }
 
 function createFloor(floor) {
