@@ -79,7 +79,10 @@ let clickManager = new InteractionManager(
 
 
 let clicked;
+let prevModel = {}
 // сделать сравнение пред модели и некст модели => равны = стрелки убрать
+
+// что если на каждый клик делать сравнение пред модели и следующей, так можно отследивать и снятие выделение при клике на модельи стрелке одновренменно 
 
 // addTransformControl упростить, дублируется при каждом клике 
 // может сделать два отдельных диспатча для блокировки? потом соединить 
@@ -121,8 +124,6 @@ const FloorPlane = ({
   const [deleteModel, setDeleteModel] = useState(null);
   const [lockModel, setLockModel] = useState(null);
   const [clickListModel, setClickListModel] = useState(null);
-
-
   const [resetingTC, setResetingTC] = useState(null);
 
 
@@ -226,11 +227,11 @@ const FloorPlane = ({
       movingStatus = "drag";
       showAxesControl(activeObject.action, control, activeObject, 'uf drag');
 
-      if(clicked) {
-        // console.log(' clicked ');
-        showAxesControl(null, control)
-        clicked = null 
-      }
+      // if(clicked) {
+      //   // console.log(' clicked ');
+      //   showAxesControl(null, control)
+      //   clicked = null 
+      // }
       // console.log(' uf drag ', activeObject.selectedModel?.id, TCModel_id);
     }
   }, [moveModel]);  // eslint-disable-line react-hooks/exhaustive-deps
@@ -243,11 +244,11 @@ const FloorPlane = ({
       movingStatus = "rotate";
       console.log(clicked, 'cliced');
       // console.log('rotate UF');
-      if (clicked) {
-        // console.log(' clicked rotate ');
-        showAxesControl(null, control)
-        clicked = null
-      }
+      // if (clicked) {
+      //   // console.log(' clicked rotate ');
+      //   showAxesControl(null, control)
+      //   clicked = null
+      // }
     }
   }, [rotateModel]);  // eslint-disable-line react-hooks/exhaustive-deps
   // обновление текстуры для стен
@@ -684,24 +685,40 @@ function loadModel(modelJson) {
 
   });
 }
+
+
+function isSameModel(prev, next) {
+if (prev === next) {
+ return true
+}
+}
+
 // реакция на клик модели => подсветка и transform control
 function addHightLight(root) {
   // console.log(' start addHightLight');
   // if (!controlStatus) {
   if (root?.visible && root.parent && cameraStatus !== 'panorama') {
     // console.log('addHightLight', root);
+    // isSameModel(prevModel, root.userData)
+    
     root.userData.click += 1;
-    // current = root;
 
+
+    // console.log(' prev', prevModel);
     highlightModel(root);
 
-    if (!root.userData.locked) {
+    if (!isSameModel(prevModel, root.userData) && !root.userData.locked) {
       transformControledModel = root;
       addTransformControl(root);
-
-    } else {
-      console.log('elem blocked');
     }
+    prevModel = root.userData;
+    // if (!root.userData.locked) {
+    //   transformControledModel = root;
+    //   addTransformControl(root);
+
+    // } else {
+    //   console.log('elem blocked');
+    // }
     // }
     // controlStatus = false;
   } else {
@@ -839,8 +856,9 @@ function addSelectedObject(object) {
   selectedObjects = [];
   selectedObjects.push(object);
 }
-// ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ С ОБЪЕКТАМИ ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ С ОБЪЕКТАМИ ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ С ОБЪЕКТАМ И ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ С ОБЪЕКТАМИ ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ С ОБЪЕКТАМИ
 
+
+// ОСНОВНЫЕ ФУНКЦИИ РАБОТЫ С ОБЪЕКТАМИ
 function addTransformControl(model) {
 
   if (model.parent && !model.userData.locked) {
