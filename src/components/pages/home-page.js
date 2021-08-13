@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React from "react";
 import { connect } from "react-redux";
 import { compose } from "../../utils";
 
@@ -6,7 +6,6 @@ import "./home-page.css";
 import hand from "../../img/icons/drag.png";
 import rotate from "../../img/icons/rotate.png";
 import rotate2 from "../../img/icons/arrow-rotate.png";
-import change from "../../img/icons/change.svg";
 import Navigation from "../navigation";
 import addImg from "../../img/icons/add.png";
 import handImg from "../../img/icons/hand.svg";

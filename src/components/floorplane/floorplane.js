@@ -27,7 +27,7 @@ import {
   replaceModelFromCollision,
   replaceElemFromArr,
   changeVisibility, changeTextureWall,
-  getChangeTextureFloor, removeAllHightLight
+  getChangeTextureFloor, removeAllHightLight, getCube
 } from "../scripts/initBasicScene.js";
 
 import outlineParam from '../settings/outline';
@@ -50,7 +50,6 @@ let scene,
   updateUseEffectInstrum,
   updateUseEffectDelete,
   updateUseEffectListClick,
-  updateUseEffectTC,
   updateUseEffectLock,
   clock,
   cameraControls,
@@ -69,19 +68,17 @@ let scene,
 initGlobalLets();
 initUseEffects(); // список useEffect
 // initDispatchers()
-let selectWallDispatch, selectSurfaceDispatch, resetSelectedModelDispatch, changePositionModelDispatch, selectModelDispatch, resetTCDispatch;
+let selectWallDispatch, selectSurfaceDispatch, resetSelectedModelDispatch, changePositionModelDispatch, selectModelDispatch;
 let canvas = renderer.domElement;
 let clickManager = new InteractionManager(
   renderer,
   cameraPersp,
   renderer.domElement
 );
+let needArrow = true;
 
-
-let clicked;
-let prevModel = {}
-// сделать сравнение пред модели и некст модели => равны = стрелки убрать
-
+let prevModel = {} // модель, на которую кликнули - для отслеживания поторного клика на ту же модель
+// как насчет названий диспатчеров - dispatchSelectModel, a если мне нужно глобаное имя - dispatchGlobalSelectModel ? -   ПЕРЕПИСАТЬ 
 // что если на каждый клик делать сравнение пред модели и следующей, так можно отследивать и снятие выделение при клике на модельи стрелке одновренменно 
 
 // addTransformControl упростить, дублируется при каждом клике 
@@ -95,7 +92,6 @@ const FloorPlane = ({
   project_1,
   changePositionModel,
   camera,
-  changeStatusCamera,
   selectWall,
   selectModel,
   selectSurface,
@@ -103,8 +99,7 @@ const FloorPlane = ({
   resetNewModel,
   modalForConfirm,
   resetSelectedModel,
-  resetLockModel, selectedInModelList, activeInList,
-  resetTransformControl,
+  resetLockModel, activeInList,
   resetTC
 }) => {
   const { surfaces } = project_1;
@@ -124,15 +119,12 @@ const FloorPlane = ({
   const [deleteModel, setDeleteModel] = useState(null);
   const [lockModel, setLockModel] = useState(null);
   const [clickListModel, setClickListModel] = useState(null);
-  const [resetingTC, setResetingTC] = useState(null);
 
 
   updateDispatches(); // локальные диспатчеры переносим в глобальные
   checkUpdateForReplace();
   checkUpdateForVisibility();
   checkUpdateForAddModel();
-  checkUpdateForMovingModel(); // эти две функции рендерят компонент дважды
-  checkUpdateForRotateModel();
   checkUpdateForCameraPanorama();
   checkUpdateForCameraDef();
   checkUpdateTexture__wall();
@@ -140,11 +132,12 @@ const FloorPlane = ({
   checkUpdateInstrum();
   checkUpdateDeleteModel();
   checkUpdateLockModel();
+
+  checkUpdateForMovingModel(); // эти две функции рендерят компонент дважды
+  checkUpdateForRotateModel();
+
   checkUpdateClickListModel();
-  // checkUpdateResetTC(); // проверка на сброс стрелок без спроса action  - для убирания стрелок при повторном клике на модель
 
-
-  // isSelected(activeInList.selectedModel)
   // создать функцию, которая отлавливает был ли клик по модели, если был вызываем addHightLight 
 
   // отрисовывает сцену и свет
@@ -219,14 +212,13 @@ const FloorPlane = ({
   }, [cameraDefault]);  // eslint-disable-line react-hooks/exhaustive-deps
 
 
-
   // добавляем перемещение
   useEffect(() => {
     if (activeObject.action === "drag" && updateUseEffectForDrag ) {
 
       movingStatus = "drag";
       showAxesControl(activeObject.action, control, activeObject, 'uf drag');
-
+      console.log(' move useEffect ');
       // if(clicked) {
       //   // console.log(' clicked ');
       //   showAxesControl(null, control)
@@ -238,17 +230,8 @@ const FloorPlane = ({
   // добавляем вращение
   useEffect(() => {
     if (activeObject.action === "rotate") {
-  
-
       showAxesControl(activeObject.action, control);
       movingStatus = "rotate";
-      console.log(clicked, 'cliced');
-      // console.log('rotate UF');
-      // if (clicked) {
-      //   // console.log(' clicked rotate ');
-      //   showAxesControl(null, control)
-      //   clicked = null
-      // }
     }
   }, [rotateModel]);  // eslint-disable-line react-hooks/exhaustive-deps
   // обновление текстуры для стен
@@ -349,28 +332,13 @@ const FloorPlane = ({
     if (
       activeInList.selectedModel?.id && updateUseEffectListClick
     ) {
-      // console.log(' click model list UF');
       updateUseEffectListClick = false;
       let root = findModel(scene.children, activeInList.selectedModel?.id);
-      addHightLight(root)
-      // console.log(' uf list model ');
+      addHightLight(root, 'modelList');
+
+      console.log(' click list model');
     }
   }, [clickListModel]);  // eslint-disable-line react-hooks/exhaustive-deps
-
-
-  // если нужно убрать только стрелки TC
-  useEffect(() => {
-    if (
-      activeObject.action &&
-      updateUseEffectTC && !activeObject.selectModel?.id
-    ) {
-      console.log(' resetTransformControlUF');
-      updateUseEffectTC = false;
-    // hideTransformControl(control);
-
-    }
-  }, [resetingTC]);  // eslint-disable-line react-hooks/exhaustive-deps
-
 
   function getChangeLock(mod) {
 
@@ -391,8 +359,6 @@ const FloorPlane = ({
     // console.log('getChangeLock');
   }
 
-
-
   function updateDispatches() {
     selectWallDispatch = selectWall; // для передачи локального dispach в addEventListener внешний
     selectSurfaceDispatch = selectSurface;
@@ -400,7 +366,6 @@ const FloorPlane = ({
     changePositionModelDispatch = changePositionModel;
     selectModelDispatch = selectModel;
     resetSelectedModelDispatch = resetSelectedModel;
-    resetTCDispatch = resetTC
   }
 
 
@@ -547,16 +512,6 @@ const FloorPlane = ({
       updateUseEffectListClick = true;
     }
   }
-  function checkUpdateResetTC() {
-    if (
-      activeObject.action &&
-      !updateUseEffectTC && !activeObject.selectModel?.id
-    ) {
-      setResetingTC(resetingTC + 1)
-      updateUseEffectTC = true;
-    }
-  }
-
   return (
     <>
       <div ref={ref} />
@@ -674,9 +629,6 @@ function loadModel(modelJson) {
     // выбивало ошибку при удалении моделей, делаем проверку на то, состоит ли в сцене модель
     if (root.parent && root.visible) {
       root.addEventListener("click", () => addHightLight(root));
-
-      // root.material.depthTest = false;
-      // root.renderOrder = 1;
       clickManager.add(root);
       checkCollisionModels.push(root);
       wallList.push(root);
@@ -689,27 +641,22 @@ function loadModel(modelJson) {
 
 function isSameModel(prev, next) {
 if (prev === next) {
+
  return true
 }
 }
 
 // реакция на клик модели => подсветка и transform control
-function addHightLight(root) {
+function addHightLight(root, status) {
   // console.log(' start addHightLight');
-  // if (!controlStatus) {
   if (root?.visible && root.parent && cameraStatus !== 'panorama') {
-    // console.log('addHightLight', root);
-    // isSameModel(prevModel, root.userData)
-    
     root.userData.click += 1;
+    highlightModel(root, status);
 
-
-    // console.log(' prev', prevModel);
-    highlightModel(root);
-
-    if (!isSameModel(prevModel, root.userData) && !root.userData.locked) {
+    if (needArrow && !root.userData.locked) {
       transformControledModel = root;
       addTransformControl(root);
+      // console.log(prevModel, 'prevModel');
     }
     prevModel = root.userData;
     // if (!root.userData.locked) {
@@ -719,7 +666,7 @@ function addHightLight(root) {
     // } else {
     //   console.log('elem blocked');
     // }
-    // }
+    
     // controlStatus = false;
   } else {
     // controlStatus = false;
@@ -796,7 +743,6 @@ function initUseEffects() {
   updateUseEffectDelete = false;
   updateUseEffectLock = false;
   updateUseEffectListClick = false;
-  updateUseEffectTC = false
 }
 function initGlobalLets() {
   scene = new THREE.Scene();
@@ -824,7 +770,6 @@ function initGlobalLets() {
 // нельзя переносить
 const showAxesControl = (typeOfChange, control, obj, text) => {
   // console.log(typeOfChange, 'typeOfChange', text, 'text');
-  // console.log(transformControledModel?.userData.name, obj.selectedModel );
     if (typeOfChange === "drag") {
       updateUseEffectForDrag = false;
       control.setMode("translate");
@@ -862,11 +807,8 @@ function addSelectedObject(object) {
 function addTransformControl(model) {
 
   if (model.parent && !model.userData.locked) {
-    console.log('addTransformControl');
-    // console.log(movingStatus, 'movingStatus tc');
-    // console.log(model.userData.locked, 'locked in TC');
+
     model.userData.currentPosition = new THREE.Vector3();
-    model.index = 100
     // реагирует на все изменения 
     control.addEventListener("change", render);
     // при перетягивании
@@ -877,7 +819,6 @@ function addTransformControl(model) {
         el.target.children[0].object.userData.currentPosition.copy(
           el.target.children[0].object.position
         );
-        // console.log('objectChange');
       },
       false
     );
@@ -890,15 +831,8 @@ function addTransformControl(model) {
 
 
     scene.add(control);
-    control.showX = false;
-    control.showY = false; 
-    control.showZ = false;
-    // console.log(movingStatus, 'movingStatus');
     showAxesControl(movingStatus, control, 'add TC');
     control.attach(model);
-    // clickManager.add(control);
-
-
 
   } else {
     console.log('elem blocked');
@@ -907,7 +841,6 @@ function addTransformControl(model) {
   }
 
 }
-let removeArrows = false;
 // отправляет данные в стор 
 function sendPosition(event, model) {
 
@@ -932,10 +865,6 @@ function removeHightLight(model) {
     // нужно пробросить еще что-то в диспач, чтобы на него подвязать useeffect для сброса стрелок 
     resetSelectedModelDispatch();
     hideTransformControl(control);
-    clicked = model.userData.id
-    // console.log('убираем стрелки ');
-    // removeArrows = true;
-    // resetTCDispatch(true);
   }
 }
 function removeHightLight_2(model) {
@@ -950,35 +879,62 @@ function removeHightLight_2(model) {
     // resetSelectedModelDispatch();
   }
 }
-function highlightModel(model) {
-  if (cameraStatus !== 'panorama') {
-    // сделать доп проверку на то, что жто первый клик по модели, чтобы не перебирать лишний раз 
-    if (model.userData.type === 'MODEL' && !model.userData.selected) {
-      // TCModel_id = model.userData.id
-      selectModelDispatch(model.userData);
 
-    }
+function isModel(model) {
+  if (model.userData.type === 'MODEL') {
+    return true
+  }
+}
+function isSelected(model) {
+  if (model.userData.selected) {
+    return true
+  } else {
+    return false
+  }
+}
+
+// status для modellist чтоб понимать откуда клик 
+function highlightModel(model, status) {
+  if (cameraStatus !== 'panorama') {
+    // console.log(model.userData.click);
+    // сделать доп проверку на то, что жто первый клик по модели, чтобы не перебирать лишний раз 
+
     // если клик не четный и если модель уже не была выбранна
-    if (model.userData.click % 2 > 0 && model.userData.selected !== true) {
+    if (model.userData.click % 2 > 0 && isSelected(model) === false) {
+      if (isModel(model) ) {
+        selectModelDispatch(model.userData);
+      }
+
       removeAllHightLight(scene.children, model);
-      // console.log(" добавляем подсветку, удаляя предыдущие ");
+      console.log(" добавляем подсветку, удаляя предыдущие ");
+      needArrow = true;
       needOutline = true;
       model.userData.selected = true;
       addSelectedObject(model);
       outlinePass.selectedObjects = selectedObjects;
+     
     } // 
     else if (model.userData.click % 2 === 0 && model.userData.click > 1) {
-      // console.log(" кликнутая модель");
+      if (isModel(model)) {
+        selectModelDispatch(model.userData);
+      }
+      console.log(" кликнутая модель");
       model.userData.selected = true;
       needOutline = true;
       removeAllHightLight(scene.children, model);
-    } else if (model.userData.selected === true) {
+    } else if (isSelected(model)) {
+      if (isModel(model)) {
+        selectModelDispatch(model.userData);
+      }
       // если повторно кликаем на одну и ту же модель
-      // console.log("была true");
+      console.log("кликаем на одну и ту же модель");
+      needArrow = false;
       needOutline = false;
       removeHightLight(model);
+      // prevModel = {}
       model.userData.selected = false;
       movingStatus = null; // если нужно оставлять стрелки после снятия выделения - убрать null 
+      // resetSelectedModelDispatch()
     }
   }
 
@@ -1069,10 +1025,7 @@ function resetCamera(changeStatusCamera) {
 // клик по trancsform control внутри модели?
 function isClickForTC(ev) {
   console.log(ev.object);
-  if (ev.object.type === 'Line') {
-    console.log(' click по TC');
 
-  }
 }
 // ПОДКЛЮЧИТЬ ОДНОВРЕМЕННО КЛИК И КЛИК МЕНЕДЖЕР И ДЕЛАТЬ ПРОВЕРКУ НА СУЩЕСТВОВАНИЕ В ЮЗЕР ДАТЕ СВОЙСТВ, ЕСДИ ИХ НЕТ ПСТЬ РАБОТАЕТ КЛИК МЕНЕДЖЕР
 // сделано для клика по стенам и модели  - нужно чтобы было различие

@@ -816,16 +816,21 @@ const selectedInModelList = (state, payload) => {
         return {
             ...state,
             activeInList: { ...activeInList, selectedModel: activeModel },
-            activeObject: { ...activeObject, selectedModel: {} }
+            // activeObject: { ...activeObject, selectedModel: {} }
         };
     } else {
         return {
             ...state,
             activeInList: { ...activeInList, selectedModel: {} },
-            activeObject: { ...activeObject, action: '' }
+            activeObject: { ...activeObject, selectedModel: {}, action: '' }
         };
     }
 
+    // return {
+    //     ...state,
+    //     // activeInList: { ...activeInList, selectedModel: activeModel },
+    //     activeObject: { ...activeObject, selectedModel: activeModel}
+    // };
 
 }
 const resetTC = (state, payload)=> {
