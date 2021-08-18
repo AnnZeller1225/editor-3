@@ -1,27 +1,13 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { RectAreaLightHelper } from "three/examples/jsm/helpers/RectAreaLightHelper.js";
+import {  composer, effectFXAA } from "../scripts/outline"
 const loader = new THREE.TextureLoader();
 
 function initScene(scene) {
     scene.background = new THREE.Color(0x657d83);
 }
 
-function initCamera(camera) {
-    // var angle = 0;
-    // var radius = 500;
-    // width / - 2, width / 2, height / 2, height / - 2, 1, 1000
-    // camera.position.set(8, 12, 1);
-    // camera.position.set(-1, 4, 8);
-    // camera.position.set(-1, 8, -10);
-
-    camera.position.set(-1, 2, 4);
-
-    //   camera.position.x = radius * Math.cos( angle );
-    // camera.position.z = radius * Math.sin( angle );
-    // camera.rotation.y = 90 * Math.PI / 180
-    // camera.lookAt(0, 5, 5);
-}
 
 function getMouseCoord(e, canvas, mouse) {
     // mouse.x = (event.clientX / window.innerWidth) * 2 - 1; // предыдущее решение
@@ -186,14 +172,10 @@ function drawBox(
 // соединить части моделей
 function combinePartsOfModel(el, scene) {
     var group, mesh, box;
-
     group = new THREE.Group();
     var loader = new GLTFLoader();
-
-    // console.log(el, 'el');
     loader.load(`${el.url}`, (gltf) => {
         mesh = gltf.scene;
-
         var gltfbox = new THREE.Box3().setFromObject(mesh);
         const width = new THREE.Vector3();
 
@@ -209,13 +191,9 @@ function combinePartsOfModel(el, scene) {
         box = drawBox(objectwidth, objectheight, objectdepth, el);
         group.add(box);
         group.name = "quadrant";
-        // box.add(mesh);
         return mesh
-        // scene.add(mesh);
     });
-    // scene.add(group);
     return box;
-
 }
 
 function setTexture(wall, side, url) {
@@ -241,6 +219,7 @@ function hideTransformControl(control) {
     control.showX = false;
     control.showY = false;
     control.showZ = false;
+    control.detach();
 }
 
 function createFloor(floor) {
@@ -318,7 +297,6 @@ const loadTextureForBox = (texture, length, wallHeight) => {
 }
 function changeVisibility(mod, arr) {
     let model = findModel(arr, mod.id);
-    // console.log(mod);
     model.visible = mod.visible;
     return model;
 }
@@ -342,10 +320,23 @@ function removeAllHightLight(arr) {
     });
 }
 
+function onWindowResize(cameraPersp, renderer) {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    cameraPersp.aspect = width / height;
+    cameraPersp.updateProjectionMatrix();
+    renderer.setSize(width, height);
+    // для обводки
+    composer.setSize(width, height);
+    effectFXAA.uniforms["resolution"].value.set(
+        1 / window.innerWidth,
+        1 / window.innerHeight
+    );
+}
+
 
 export {
     initScene,
-    initCamera,
     initPointLight,
     initFloor,
     initRenderer,
@@ -367,4 +358,6 @@ export {
     changeVisibility, 
     changeTextureWall, getChangeTextureFloor,
     removeAllHightLight, 
+    onWindowResize,
+
 };

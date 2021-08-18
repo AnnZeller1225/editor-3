@@ -15,7 +15,7 @@
 }
 .list-item-wrap-img {
     width: 100%;
-    max-width: 90px;
+    max-width: 120px;
     display: flex;
 
     /* width: 25%;
@@ -25,6 +25,7 @@
     /* border: 1px solid red; */
 }
 .block {
+    width: 48%;
     /* width: 400px; */
 }
 .todo {
@@ -33,7 +34,9 @@
     max-width: 350px; */
 }
 .list {
-    width: 320px;
+    /* width: 40%; */
+    /* width: 100%;
+    max-width: 400px; */
 }
 .list-item-img, .furniture-list-img {
     padding-top: 3px;
@@ -67,11 +70,16 @@ body {
     overflow-x: hidden;
 }
 .list-item{
-    min-width: 190px;
+    width: 100%;
+    max-width: 150px;
+/* width: 200px; */
+/* width: 80%; */
     border: 1px solid rgba(0, 0, 0, 0.377);
 }
 .list-item-w {
     transition: 0.1s linear;
+    width: 100%;
+    max-width: 450px;
 }
 .list-item:hover {
     /* background-color: rgba(152, 105, 196, 0.151); */

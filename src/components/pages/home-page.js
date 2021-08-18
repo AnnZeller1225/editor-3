@@ -10,7 +10,7 @@ import Navigation from "../navigation";
 import addImg from "../../img/icons/add.png";
 import handImg from "../../img/icons/hand.svg";
 import textureImg from "../../img/icons/texture.png";
-import basketImg from "../../img/icons/basket.png";
+
 import arrowImg from "../../img/icons/arrow.png";
 import FloorList from "../floor-list";
 import Modal from "../modal-window";
@@ -101,12 +101,7 @@ const HomePage = ({
               <img src={addImg} alt="Logo" />
             </div>
 
-            <div
-              className="controls-btn"
-              onClick={() => selectTypeOfChange("delete_model")}
-            >
-              <img src={basketImg} alt="Logo" />
-            </div>
+           
 
           </div>
 

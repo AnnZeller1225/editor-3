@@ -25,10 +25,11 @@ export const selectReplaceBy = (model) => {
   };
 };
 
-export const selectTypeOfChange = (typeStatus) => {
+export const selectTypeOfChange = (typeStatus, el) => {
   return {
     type: "SELECT_TYPE_OF_CHANGE",
     payload: typeStatus,
+    el:el
   };
 };
 export const replaceModel = () => {

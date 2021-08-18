@@ -3,7 +3,7 @@ import cloneDeep from "lodash/cloneDeep";
 const initialState = {
     project_1: {
         surfaces: [
-   
+
             {
                 id: "4",
                 name: "Стул красный",
@@ -21,23 +21,23 @@ const initialState = {
                 type: "MODEL",
                 url: "./models/doors.glb",
                 scale: "1",
-                dots: { x: "1", y: "0", z: "-1" },
+                dots: { x: "1", y: "0", z: "-2" },
                 rotate: 1.5,
                 moveOnly: "XZ",
                 visible: true,
                 locked: false,
             },
-            // {
-            //     id: "1",
-            //     name: "Стол круглый",
-            //     type: "MODEL",
-            //     url: "./models/table_03.glb",
-            //     dots: { x: "1", y: "0", z: "0" },
-            //     rotate: 0,
-            //     moveOnly: "XZ",
-            //     visible: true,
-            //     locked: true,
-            // },
+            {
+                id: "81",
+                name: "Стол круглый",
+                type: "MODEL",
+                url: "./models/table_03.glb",
+                dots: { x: "1", y: "0", z: "0" },
+                rotate: 0,
+                moveOnly: "XZ",
+                visible: true,
+                locked: false,
+            },
             // {
             //     id: "3",
             //     name: "Телевизор",
@@ -174,17 +174,12 @@ const initialState = {
             // },
         ],
         floor: {
+            name: "Пол",
             id: "1",
             type: "FLOOR_SHAPE",
             texture: {
                 width: "0.5",
-                // url: "lam2.jpeg",
-                //  url: "кирпич.jpg",
-                // url: "камень4.jpg",
                 url: "lam2.jpeg",
-                // url: "50.jpg",
-                // url: "laminat.jpg",
-                // 
             },
 
             dots: [
@@ -196,19 +191,28 @@ const initialState = {
                 { x: "0", y: "0", z: "0" },
             ],
         },
+
     },
 
     activeObject: {
         wall: '',
         surface: {},
         replaceBy: '',
-        action: '',
-        isSave: false,
+        action: '', // для поворота или мувинга модели
+        changeVisible:{
+            obj: {},
+            action: ''
+        },
+        isSave: false, // для модалки
         newTexture: {},
         newModel: {},
+        typeOfChange:'',
         selectedModel: {},
         lockModel: {},
+        locking: {},
+        deleting: {}
     },
+
     // выбранные из списков а не по клику
     activeInList: {
         wall: '',
@@ -221,11 +225,11 @@ const initialState = {
         selectedModel: {},
         lockModel: {},
     },
-    changingModels: {
-        typeOfChange: "",
-        prev: {},
-        next: {},
-    },
+    // changingModels: {
+    //     typeOfChange: "",
+    //     prev: {},
+    //     next: {},
+    // },
     // модели для замены
     modelList: [{
         id: "20",
@@ -245,7 +249,7 @@ const initialState = {
         name: "Стол черный ",
         type: "MODEL",
         url: "./models/table_03.glb",
-        dots: { x: "3", y: "0", z: "0" },
+        dots: { x: "0", y: "0", z: "0" },
         rotate: 0,
         moveOnly: "XZ",
         visible: true,
@@ -270,20 +274,6 @@ const initialState = {
         scale: "1",
         rotate: 0,
         dots: { x: "0", y: "0", z: "0" },
-        visible: true,
-        locked: false,
-    },
-    {
-        id: "26",
-        name: "Тумба",
-        type: "MODEL",
-        url: "./models/tumba.glb",
-        width: "0.1",
-        texture: "red",
-        texture_width: "1",
-        texture2: "blue",
-        dots: { x: "2", y: "0", z: "2" },
-        color: "red",
         visible: true,
         locked: false,
     },
@@ -385,11 +375,8 @@ const initialState = {
     resetTransformControl: false
 };
 
-
-
 const changeVisibilityModel = (state, payload) => {
     const { project_1, activeObject } = state;
-    // console.log("changeVisibility");
     const index = findIndex(project_1.surfaces, payload.id);
     const model = project_1.surfaces[index];
     model.visible = !model.visible;
@@ -399,7 +386,7 @@ const changeVisibilityModel = (state, payload) => {
     return {
         ...state,
         project_1: updateState,
-        activeObject: { ...activeObject, selectedModel: model, action: "change_visibility" }
+        activeObject: { ...activeObject, changeVisible: { obj: model, action: 'change_visibility'} }
     };
 };
 
@@ -443,7 +430,7 @@ const selectModel = (state, payload, from) => {
     } else {
         activeModel = payload.id !== activeObject.selectedModel?.id ? updateModel : {};
     }
- 
+
     if (activeModel?.id) {
         return {
             ...state,
@@ -506,25 +493,33 @@ const changePositionModel = (state, payload) => {
     }
 };
 
-const selectTypeOfChange = (state, payload) => {
+const selectTypeOfChange = (state, payload, el) => {
     const { modal, activeObject, modalForConfirm } = state;
 
-    if (payload === 'delete_model' && activeObject.selectedModel?.id) {
+    if (payload === 'delete_model') {
         return {
             ...state,
             modal: { ...modal, typeOfChange: payload, isOpen: true },
-            activeObject: { ...activeObject, action: payload },
+            activeObject: { ...activeObject, deleting: el, typeOfChange: payload},
             modalForConfirm: {
                 ...modalForConfirm,
                 isOpen: true
             }
         };
-    } else {
+    } else if (payload === 'drag' || payload === 'rotate'){
         let status = modal.typeOfChange === payload ? 'reset' : payload;
         return {
             ...state,
             modal: { ...modal, typeOfChange: status, isOpen: true },
             activeObject: { ...activeObject, action: status }
+        };
+
+    } else {
+        let status = modal.typeOfChange === payload ? 'reset' : payload;
+        return {
+            ...state,
+            modal: { ...modal, typeOfChange: status, isOpen: true },
+            activeObject: { ...activeObject, typeOfChange: status }
         };
     }
 
@@ -542,8 +537,7 @@ const resetSelectedModel = (state) => {
         ...state,
         activeObject: {
             ...activeObject,
-            // action: '',
-            selectedModel: {},
+            deleting: {},
             wall: '',
             surface: {},
             newModel: {},
@@ -593,12 +587,12 @@ const selectSurface = (state, id) => {
     if (activeObject.surface.id === project_1.floor.id) {
         return {
             ...state,
-            activeObject: { ...activeObject, surface: {} },
+            activeObject: { ...activeObject, surface: {}, selectedModel: {} },
         };
     } else {
         return {
             ...state,
-            activeObject: { ...activeObject, surface: project_1.floor },
+            activeObject: { ...activeObject, surface: project_1.floor, selectedModel: {} },
         };
     }
 
@@ -632,7 +626,7 @@ const getWall = (obj, state, index) => {
 }
 function replaceArr(arr, ind, el) {
     let newArr = [
-        ...arr.slice(0, ind - 1), 
+        ...arr.slice(0, ind - 1),
         ...arr.slice(ind + 1),
     ]; //список оставшихся массивов
     return newArr
@@ -684,7 +678,7 @@ const saveChanges = (state) => {
         }
 
 
-    } else if (activeObject.action === 'add_model') {
+    } else if (activeObject.typeOfChange === 'add_model') {
         return {
             ...state,
             project_1: {
@@ -697,7 +691,7 @@ const saveChanges = (state) => {
             modal: { ...modal, isOpen: false, typeOfChange: '' }
         }
 
-    } else if (activeObject.action === 'replace') {
+    } else if (activeObject.typeOfChange === 'replace') {
 
         let newModel = activeObject.newModel;
         newModel.dots = activeObject.selectedModel.dots;
@@ -751,7 +745,7 @@ const filterArr = (arr, id) => {
 const confirmModal = (state, payload) => {
     const { project_1, activeObject } = state;
     let updateSurfaces;
-    const selectedId = activeObject.selectedModel.id;
+    const selectedId = activeObject.deleting.id;
 
     updateSurfaces = payload ? updateSurfaces = filterArr(project_1.surfaces, selectedId) : project_1.surfaces;
 
@@ -771,27 +765,45 @@ const lockModel = (state, id) => {
     const { project_1, activeObject } = state;
     const index = findIndex(project_1.surfaces, id);
     const model = project_1.surfaces[index];
+
+
     model.locked = !model.locked;
     let updateState = { ...project_1 };
     updateState.surfaces[index] = { ...model };
 
-    return {
-        ...state,
-        project_1: updateState,
-        activeObject: { ...activeObject, lockModel: model }
-    };
+    // для отрисовки по уже кликнутой модели
+    if (activeObject.selectedModel?.id === id) {
+        if (!model.locked) {
+            model.needUnlock = true;
+        }
+
+        return {
+            ...state,
+            project_1: updateState,
+            activeObject: { ...activeObject, lockModel: model }
+        };
+    } else {
+        return {
+            ...state,
+            project_1: updateState,
+            activeObject: { ...activeObject, locking: model }
+        };
+    }
+
 
 }
 
 const resetLockModel = (state) => {
     const { activeObject } = state;
 
+
     return {
         ...state,
-        activeObject: { ...activeObject, lockModel: {} }
-    };
+        activeObject: { ...activeObject, lockModel: {}, locking: {} },
 
+    };
 }
+
 const selectedInModelList = (state, payload) => {
 
     const { activeInList, activeObject } = state;
@@ -833,8 +845,8 @@ const selectedInModelList = (state, payload) => {
     // };
 
 }
-const resetTC = (state, payload)=> {
-    const { resetTransformControl} = state;
+const resetTC = (state, payload) => {
+    const { resetTransformControl } = state;
 
     return {
         ...state,
@@ -851,7 +863,7 @@ const reducer = (state = initialState, action) => {
         case "SELECT_REPLACED_BY":
             return selectReplaceBy(state, action.payload);
         case "SELECT_TYPE_OF_CHANGE":
-            return selectTypeOfChange(state, action.payload);
+            return selectTypeOfChange(state, action.payload, action.el);
         // case "REPLACE_MODEL":
         //     return replaceModel(state);
         case "CHANGE_VISIBILITY_MODEL":
