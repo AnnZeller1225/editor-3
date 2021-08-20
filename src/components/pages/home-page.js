@@ -88,12 +88,12 @@ const HomePage = ({
             >
               <img src={change} alt="Logo" />
             </div>{" "} */}
-            <div
+            {/* <div
               className="controls-btn"
               onClick={() => selectTypeOfChange("change_texture")}
             >
               <img src={textureImg} alt="Logo" />
-            </div>
+            </div> */}
             <div
               className="controls-btn"
               onClick={() => selectTypeOfChange("add_model")}

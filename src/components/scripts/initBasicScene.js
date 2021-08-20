@@ -44,11 +44,11 @@ function initFloor(scene) {
     // scene.add(new THREE.GridHelper(20, 20, 0x888888, 0x444444)); // сетка пола
 }
 
-function findModel(arr, id) {
+function findModel(arr, obj) {
     let elem;
 
     arr.forEach((el) => {
-        if (el.type === "Group" && el.userData.id === id) {
+        if (el.type === "Group" && el.userData.id === obj.id) {
             elem = el;
         }
     });
@@ -222,26 +222,35 @@ function hideTransformControl(control) {
     control.detach();
 }
 
-function createFloor(floor) {
+// сложная форма пола - трапеция например
+function polygonShape(floor) {
     const floorFigureCoord = [];
     floor.dots.forEach((el) => {
         floorFigureCoord.push(new THREE.Vector2(+el.x, +el.z));
     });
     const floorFigure = new THREE.Shape(floorFigureCoord);
     let texture = getSharpTexture(floor.texture);
-    return addShape(floorFigure, texture);
+    return addShape(floorFigure, texture, floor);
 }
 // создаем сложную фигуру пола
-function addShape(shape, texture) {
+function addShape(shape, texture, floor) {
     let group = new THREE.Group();
-    group.position.y = 0;
+    let Ycoord = +floor.dots[0].y; // позиционируем по оси Y
+
+    group.position.y = Ycoord;
     let geometry = new THREE.ShapeGeometry(shape);
+    let material = new THREE.MeshPhongMaterial({ map: texture });
+    material.side = THREE.DoubleSide;
     let mesh = new THREE.Mesh(
         geometry,
-        new THREE.MeshPhongMaterial({ map: texture })
+        material
     );
-    mesh.position.set(-5, 0, 3);
+    mesh.position.set(-5, Ycoord, 3);
+    if (floor.name === 'Пол') {
     mesh.rotation.x = -0.5 * Math.PI;
+    } else if(floor.name === 'Потолок') {
+        mesh.rotation.x = -0.5 * Math.PI;
+    }
     // group.add(mesh);
     return mesh;
 }
@@ -333,7 +342,23 @@ function onWindowResize(cameraPersp, renderer) {
         1 / window.innerHeight
     );
 }
+function addSurfaces(arr, clickList, scene) {
+    arr.forEach(el => {
+        const id = el.id;
+        el = polygonShape(el);
+        el.userData = {
+            type: "FLOOR_SHAPE",
+            ...el.userData,
+            id: id,
+            name: el.name,
+            click: 0,
+            outlinePass: true,
+        };
 
+        clickList.push(el);
+        scene.add(el);
+    });
+}
 
 export {
     initScene,
@@ -349,7 +374,7 @@ export {
     findSideWall,
     setTexture,
     hideTransformControl,
-    createFloor,
+    polygonShape,
     getSharpTexture,
     combinePartsOfModel,
     loadTextureForBox,
@@ -359,5 +384,6 @@ export {
     changeTextureWall, getChangeTextureFloor,
     removeAllHightLight, 
     onWindowResize,
+    addSurfaces
 
 };

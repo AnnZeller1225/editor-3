@@ -5,8 +5,6 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls";
 import { InteractionManager } from "three.interactive";
-
-// import CameraControls from "camera-controls";
 import Wall from "../wall";
 import { bindActionCreators } from "redux";
 import * as actions from "../../actions";
@@ -18,19 +16,19 @@ import {
   isCollision,
   getMouseCoord,
   hideTransformControl,
-  createFloor,
+  polygonShape,
   replaceModelFromCollision,
   replaceElemFromArr,
   changeVisibility, changeTextureWall,
   getChangeTextureFloor, removeAllHightLight,
-  onWindowResize
+  onWindowResize,
+  addSurfaces
 } from "../scripts/initBasicScene.js";
 import {
   initCamera,
   cameraControlsEnable, cameraControls, initControls, changeMovingCamera
 } from "../scripts/camera.js";
 import { initOutlineComposer, composer, outlinePass } from "../scripts/outline"
-
 
 let scene,
   cameraPersp,
@@ -39,7 +37,6 @@ let scene,
   control,
   gltfLoader,
   updateUseEffectReplace,
-  updateUseEffectVisible,
   updateForAddModel,
   updateUseEffectForDrag,
   updateUseEffectForRotate,
@@ -51,24 +48,22 @@ let scene,
   updateUseEffectDelete,
   updateUseEffectListClick,
   updateUseEffectLock,
-  updateUseEffectLocking,
   clock,
-  // cameraControls,
   // axesHelper,
   outlinedArr,
   movingStatus,
   needOutline,
-
   raycaster,
   wallList,
   selectedObjects,
   transformControledModel,
   mouse, cameraStatus;
 initGlobalLets();
-initUseEffects(); // список useEffect
-// initDispatchers()
+initUseEffects();
+// список useEffect
 let selectWallDispatch, selectSurfaceDispatch, resetSelectedModelDispatch, changePositionModelDispatch, selectModelDispatch;
-let canvas = renderer.domElement;
+const canvas = renderer.domElement;
+
 let clickManager = new InteractionManager(
   renderer,
   cameraPersp,
@@ -79,13 +74,14 @@ let prevChangeVisible = {
   obj: {},
   action: ''
 }
+let ref;
+// текстура стен не высчитывается height 
 // добавлять новю генераци. id для новой моддели 
 // перенести проверку на обновления к самим useeffecct 
 // как насчет названий диспатчеров - dispatchSelectModel, a если мне нужно глобаное имя - dispatchGlobalSelectModel ? -   ПЕРЕПИСАТЬ 
 // что если на каждый клик делать сравнение пред модели и следующей, так можно отследивать и снятие выделение при клике на модельи стрелке одновренменно 
 
 // addTransformControl упростить, дублируется при каждом клике 
-// может сделать два отдельных диспатча для блокировки? потом соединить 
 // resetSelectedModel переименовать в resetSelectedActive - сброс стен и пола тоже
 //  УБРАТЬ ДОП ПРОВЕРКИ ПО USEeFFECT 
 // СНЯТЬ ОБРАБОТЧИКИ СОБЫТИЙ С УДАЛЯЕМЫХ И ЗАМЕНЯЕМЫХ МОДЕЛЕЙ
@@ -103,12 +99,10 @@ const FloorPlane = ({
   modalForConfirm,
   resetSelectedModel,
   resetLockModel, activeInList,
-  resetTC
 }) => {
-  const { surfaces } = project_1;
   cameraStatus = camera.status;
+  ref = useRef();
 
-  const ref = useRef();
   const [replaceModel, setReplaceModel] = useState(null);
   const [visibleModel, setVisibleModel] = useState(null);
   const [addModel, setAddModel] = useState(null);
@@ -122,10 +116,6 @@ const FloorPlane = ({
   const [deleteModel, setDeleteModel] = useState(null);
   const [lockModel, setLockModel] = useState(null);
   const [clickListModel, setClickListModel] = useState(null);
-  const [needLock, setNeedLock] = useState(null);
-  // console.log(prevChangeVisible,' прев', activeObject.changeVisible, 'active');
-
-
 
   updateDispatches(); // локальные диспатчеры в глобальные
   checkUpdateForReplace();
@@ -139,34 +129,20 @@ const FloorPlane = ({
   checkUpdateForMovingModel(); // эти две функции рендерят компонент дважды
   checkUpdateForRotateModel();
   checkUpdateLockModel();
+  checkUpdateForVisibility();
+
   checkUpdateClickListModel();
 
-  checkUpdateForVisibility();
-  // checkUpdateUnlock() // при повторном клике по замочку для активной модели
-
-
-
   // отрисовывает сцену и свет, 
-  // перенести 
+  // добавление стен, пола и моделей
   useEffect(() => {
     // console.log(" useEffect_1  ");
     main();
-    function main() {
-      init();
-      animate();
-    }
+    addWalls(project_1.walls);
+    addSurfaces(project_1.floorCeiling, wallList, scene);
+    addFurniture(project_1.surfaces)
+  }, []);// eslint-disable-line react-hooks/exhaustive-deps
 
-    function init() {
-      initRenderer(renderer);
-      initScene(scene);
-      initCamera(cameraPersp);
-      initPointLight(scene);
-      // initFloor(scene);
-      initControls(cameraPersp, renderer.domElement);
-      initOutlineComposer(scene, cameraPersp, renderer); // для обводки
-      ref.current.appendChild(renderer.domElement);
-    }
-  }, []);
 
   // если меняется visible model
   // делат сравнение такой же пришел нам changevisible или нет
@@ -256,13 +232,26 @@ const FloorPlane = ({
   // обновление текстуры для стен
   useEffect(() => {
     if (updateUseEffectTexture) {
-      console.log(" меняем текстуру в юз эф   ");
+      // console.log(" меняем текстуру в юз эф   ");
       updateUseEffectTexture = !updateUseEffectTexture;
 
       changeTextureWall(activeObject.wall, activeObject.newTexture, scene);
       resetSelectedModel();
     }
-  }, [changeTexture]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [changeTexture]);// eslint-disable-line react-hooks/exhaustive-deps
+
+  function checkUpdateTexture__wall() {
+    if (
+      updateUseEffectTexture === false &&
+      activeObject.typeOfChange === "change_texture" &&
+      activeObject.wall.id &&
+      activeObject.newTexture && activeObject.isSave
+    ) {
+      // console.log(' меняем текстуру стены ');
+      setChangeTexture(changeTexture + 1);
+      updateUseEffectTexture = true;
+    }
+  }
   // текстура для пола
   useEffect(() => {
     if (updateUseEffectTexture__floor) {
@@ -272,27 +261,6 @@ const FloorPlane = ({
     }
   }, [changeTextureFloor]);  // eslint-disable-line react-hooks/exhaustive-deps
 
-  // добавление стен, пола и моделей
-  useEffect(() => {
-    addWalls(project_1.walls);
-    let floor = createFloor(project_1.floor);
-
-    floor.userData = {
-      type: project_1.floor.type,
-      ...floor.userData,
-      id: project_1.floor.id,
-      name: project_1.floor.name,
-      click: 0,
-      outlinePass: true,
-    };
-    scene.add(floor);
-    // если повесить сюда клик менеджер - кик на модели не срабатывает
-
-    wallList.push(floor);
-    surfaces.forEach(el => {
-      loadModel(el);
-    });
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
 
   // замена модели
@@ -357,19 +325,57 @@ const FloorPlane = ({
 
 
 
-  // если кликнули по списку моделей
+  // если кликнули по списку 
   useEffect(() => {
+    const { selectedModel, wall, surface } = activeInList;
     if (
-      activeInList.selectedModel?.id && updateUseEffectListClick
+      (activeInList.selectedModel?.id || activeInList.wall?.id || activeInList.surface?.id) &&
+      updateUseEffectListClick
     ) {
-      updateUseEffectListClick = false;
-      let root = findModel(scene.children, activeInList.selectedModel?.id);
-      addHightLight(root, 'modelList');
+      console.log('click');
+      let active;
+      let activeObj;
+      if (selectedModel?.id) {
+        console.log('active is model');
+        active = selectedModel
+        activeObj = findModel(scene.children, active);
+      } else if (wall?.id) {
+        console.log('active is wall');
+        active = wall
+      } else if (surface?.id) {
+        active = surface
+        console.log('active is surface');
+        activeObj = findSurface(scene.children, active);
+      } else {
+        console.log(' не нашли тип активного в списке');
+      }
 
-      console.log(' click list model');
+      addHightLight(activeObj, 'modelList');
+      // debugger;
+      updateUseEffectListClick = false;
     }
   }, [clickListModel]);  // eslint-disable-line react-hooks/exhaustive-deps
 
+  function checkUpdateClickListModel() {
+    if (
+      (activeInList.selectedModel?.id || activeInList.wall?.id || activeInList.surface?.id) &&
+      updateUseEffectListClick === false
+    ) {
+
+      setClickListModel(clickListModel + 1);
+      updateUseEffectListClick = true;
+    }
+  }
+
+  function findSurface(arr, active) {
+    let elem;
+    arr.forEach((el) => {
+      if (el.type === "Mesh" && el.userData.type === active.type && el.userData.id === active.id) {
+        elem = el;
+      }
+    });
+    return elem;
+  }
 
   // блокировка модели
   useEffect(() => {
@@ -496,18 +502,7 @@ const FloorPlane = ({
     }
   }
 
-  function checkUpdateTexture__wall() {
-    if (
-      updateUseEffectTexture === false &&
-      activeObject.action === "change_texture" &&
-      activeObject.wall.id &&
-      activeObject.newTexture && activeObject.isSave
-    ) {
-      console.log(' меняем текстуру стены ');
-      setChangeTexture(changeTexture + 1);
-      updateUseEffectTexture = true;
-    }
-  }
+
 
   function checkUpdateTexture__floor() {
     if (
@@ -532,33 +527,6 @@ const FloorPlane = ({
 
 
 
-
-
-
-  function checkUpdateUnlock() {
-    if (
-      (activeObject.lockModel?.needUnlock) &&
-      updateUseEffectLocking === false
-    ) {
-      setNeedLock(needLock + 1)
-      updateUseEffectLocking = true;
-    }
-  }
-
-
-
-
-
-  function checkUpdateClickListModel() {
-    if (
-      activeInList.selectedModel?.id &&
-      updateUseEffectListClick === false
-    ) {
-
-      setClickListModel(clickListModel + 1);
-      updateUseEffectListClick = true;
-    }
-  }
   return (
     <>
       <div ref={ref} />
@@ -569,6 +537,9 @@ const FloorPlane = ({
   );
 };
 
+// function getTypeOfObject(obj){
+//   return type, id
+// }
 
 const mapStateToProps = ({
   project_1,
@@ -604,7 +575,7 @@ function mapDispatchToProps(dispatch) {
 export default compose(connect(mapStateToProps, mapDispatchToProps))(
   FloorPlane
 );
-
+// можно перенести 
 function addWalls(arr) {
   // тут решить вопрос с правильным поворотом груп - перепутала угол поворота
   // const group = new THREE.Group();
@@ -615,7 +586,7 @@ function addWalls(arr) {
       ...addedWall.userData,
       id: wall.id,
       name: wall.name,
-      type: "WALL",
+      type: wall.type,
       click: 0,
       outlinePass: true,
     };
@@ -626,6 +597,12 @@ function addWalls(arr) {
   });
 }
 
+
+function addFurniture(arr) {
+  arr.forEach(el => {
+    loadModel(el);
+  });
+}
 
 function loadModel(modelJson) {
   gltfLoader.load(`${modelJson.url}`, (gltf) => {
@@ -660,12 +637,12 @@ function isSameModel(prev, next) {
 
 // реакция на клик модели => подсветка и transform control
 function addHightLight(root, status) {
-  // console.log(' start addHightLight');
   if (root?.visible && root.parent && cameraStatus !== 'panorama' && !control.userData.active) {
     root.userData.click += 1;
+    console.log(' add HL');
     highlightModel(root, status);
-
-    if (needArrow && !root.userData.locked) {
+// если это модель,  не заблочена и если ей нужны стрелки 
+    if (needArrow && !root.userData.locked && (root.userData.type !== "WALL" || root.userData.type !== "FLOOR_SHAPE" )) {
       transformControledModel = root;
       addTransformControl(root);
     } else {
@@ -697,7 +674,6 @@ function deleteModelFromScene(modelLson) {
 
 function initUseEffects() {
   updateUseEffectReplace = false;
-  updateUseEffectVisible = false;
   updateForAddModel = false;
   updateUseEffectForDrag = false;
   updateUseEffectForRotate = false;
@@ -708,7 +684,6 @@ function initUseEffects() {
   updateUseEffectInstrum = false;
   updateUseEffectDelete = false;
   updateUseEffectLock = false;
-  updateUseEffectLocking = false;
   updateUseEffectListClick = false;
 }
 function initGlobalLets() {
@@ -837,26 +812,19 @@ function removeHightLight(model) {
   selectedObjects = [];
   outlinePass.selectedObjects = selectedObjects;
   addSelectedObject(model);
-  if (model.userData.type === 'MODEL') {
+  if (model.userData.type === 'MODEL' || model.userData.type === 'FLOOR_SHAPE') {
     resetSelectedModelDispatch();
     hideTransformControl(control);
-  }
-}
-function removeHightLight_2(model) {
-  control.visible = false;
-  model.userData.click = 0;
-  console.log(' снять выделение ');
-
-  selectedObjects = [];
-  outlinePass.selectedObjects = [];
-  addSelectedObject(model);
-  if (model.userData.type === 'MODEL') {
-    // resetSelectedModelDispatch();
   }
 }
 
 function isModel(model) {
   if (model.userData.type === 'MODEL') {
+    return true
+  }
+}
+function isSurface(model) {
+  if (model.userData.type === 'FLOOR_SHAPE') {
     return true
   }
 }
@@ -869,44 +837,52 @@ function isSelected(model) {
 }
 
 // status для modellist чтоб понимать откуда клик 
-function highlightModel(model, status) {
+function highlightModel(model) {
   if (cameraStatus !== 'panorama') {
-    // console.log('hightlight');
-    // сделать доп проверку на то, что жто первый клик по модели, чтобы не перебирать лишний раз 
-
     // если клик не четный и если модель уже не была выбранна
     if (model.userData.click % 2 > 0 && isSelected(model) === false) {
+
       if (isModel(model)) {
         selectModelDispatch(model.userData);
+      } else if (isSurface(model)) {
+        selectSurfaceDispatch(model.userData.id)
+      
+        // break
       }
-
+      // debugger;
       removeAllHightLight(scene.children, model);
-      // console.log(" добавляем подсветку, удаляя предыдущие ");
+      console.log(" добавляем подсветку, удаляя предыдущие ");
       needArrow = true;
       needOutline = true;
       model.userData.selected = true;
       addSelectedObject(model);
       outlinePass.selectedObjects = selectedObjects;
 
-    } // 
+    }
     else if (model.userData.click % 2 === 0 && model.userData.click > 1) {
+
       if (isModel(model)) {
         selectModelDispatch(model.userData);
+
+      } 
+      else if (isSurface(model)) {
+        selectSurfaceDispatch(model.userData.id)
       }
-      // console.log(" кликнутая модель");
+      console.log(" кликнутая модель");
       model.userData.selected = true;
       needOutline = true;
       removeAllHightLight(scene.children, model);
     } else if (isSelected(model)) {
       if (isModel(model)) {
         selectModelDispatch(model.userData);
+      } else if (isSurface(model)) {
+        selectSurfaceDispatch(model.userData.id)
       }
       // если повторно кликаем на одну и ту же модель
-      // console.log("кликаем на одну и ту же модель");
+      console.log("кликаем на одну и ту же модель");
       needArrow = false;
       needOutline = false;
       removeHightLight(model);
-      // prevModel = {}
       model.userData.selected = false;
       movingStatus = null; // если нужно оставлять стрелки после снятия выделения - убрать null 
       // resetSelectedModelDispatch()
@@ -915,44 +891,15 @@ function highlightModel(model, status) {
 
 }
 
-function highlightModel_2(model) {
-  console.log(' hlModel 2 ', model.userData.click, model.userData.selected);
-  // если клик не четный и если модель уже не была выбранна
-  if (model.userData.click % 2 > 0 && model.userData.selected !== true) {
-    removeAllHightLight(scene.children, model);
-    console.log(" добавляем подсветку, удаляя предыдущие ");
-    needOutline = true;
-    model.userData.selected = true;
-    addSelectedObject(model);
-    outlinePass.selectedObjects = selectedObjects;
-  } // 
-  else if (model.userData.click % 2 === 0 && model.userData.click > 1) {
-    console.log(" кликнутая модель");
-    model.userData.selected = true;
-    needOutline = true;
-    // removeAllHightLight(scene.children, model);
-  } else if (model.userData.selected === true) {
-    // если повторно кликаем на одну и ту же модель
-    console.log("кликнули по выбранной");
-    needOutline = false;
-    removeHightLight_2(model);
-    model.userData.selected = false;
-    movingStatus = null; // если нужно оставлять стрелки после снятия выделения - убрать null 
-  } else {
-    console.log("exseption highlightModel");
-  }
-}
 
-
-function onClick(event) {
-  //  && (control.showX === false || control.visible === false)
-  if (cameraStatus !== 'panorama') {
-    getMouseCoord(event, canvas, mouse);
-    checkingClick();
-  } else {
-    // нужно выделять както стену после того как двигали модель
-  }
-}
+// function onClick(event) {
+//   if (cameraStatus !== 'panorama') {
+//     getMouseCoord(event, canvas, mouse);
+//     checkingClick();
+//   } else {
+//     // нужно выделять както стену после того как двигали модель
+//   }
+// }
 
 
 function loadReplaceableModel(activeObject) {
@@ -988,66 +935,71 @@ function replaceModelToScene(activeObject) {
   resetSelectedModelDispatch();
 }
 
-// клик по trancsform control внутри модели?
-function isClickForTC(ev) {
-  console.log(ev.object);
 
-}
-// ПОДКЛЮЧИТЬ ОДНОВРЕМЕННО КЛИК И КЛИК МЕНЕДЖЕР И ДЕЛАТЬ ПРОВЕРКУ НА СУЩЕСТВОВАНИЕ В ЮЗЕР ДАТЕ СВОЙСТВ, ЕСДИ ИХ НЕТ ПСТЬ РАБОТАЕТ КЛИК МЕНЕДЖЕР
-// сделано для клика по стенам и модели  - нужно чтобы было различие
-function checkingClick() {
-  raycaster.setFromCamera(mouse, cameraPersp);
-  var intersects = raycaster.intersectObjects(wallList, true);
-  // console.log(wallList);
-  if (intersects.length > 0) {
-    let event = intersects[0];
-    // isClickForTC(event)
+//  для клика по стенам и полу
+function onClick(event) {
+  if (cameraStatus !== 'panorama') {
+    getMouseCoord(event, canvas, mouse);
 
-    if (event.object.userData.type === "FLOOR_SHAPE") {
-      const root = intersects[0].object;
-      let eventId = root.userData.id;
-      root.userData.click += 1;
-      if (!control.userData.active) {
+    raycaster.setFromCamera(mouse, cameraPersp);
+    var intersects = raycaster.intersectObjects(wallList, true);
+
+    if (intersects.length > 0) {
+      let event = intersects[0];
+      // isClickForTC(event)
+      if (event.object.userData.type === "FLOOR_SHAPE") {
+        const root = intersects[0].object;
+        let eventId = root.userData.id;
+        // console.log(' светим пол ');
+        if (!control.userData.active) {
+          root.userData.click += 1;
+          // console.log(' светим пол ');
+          highlightModel(root, null);
+          needOutline = true;
+          hideTransformControl(control);
+          // selectSurfaceDispatch(eventId);
+        }
+      } else if (event.object.userData.type === "WALL") {
+        let eventId = intersects[0].object.userData.id;
+        let side = Math.floor(event.faceIndex / 2);
+        selectWallDispatch(eventId, side);
+        const root = intersects[0].object;
+        root.userData.click += 1;
         highlightModel(root, null);
-        needOutline = true;
         hideTransformControl(control)
+      } else if (event.object.type === "MODEL") {
+        console.log(' в checking click нашел модель ');
+        // const root = intersects[0].object.children[0];
+        // root.userData.click += 1;
+        // highlightModel(root, null);
       }
-      selectSurfaceDispatch(eventId);
-    } else if (event.object.userData.type === "WALL") {
-      let eventId = intersects[0].object.userData.id;
-      let side = Math.floor(event.faceIndex / 2);
-      console.log(side, 'side in floorp');
-      selectWallDispatch(eventId, side);
-      const root = intersects[0].object;
-      root.userData.click += 1;
-      highlightModel(root, null);
-    } else if (event.object.type === "MODEL") {
-      console.log(' в checking click нашел модель ');
-      // const root = intersects[0].object.children[0];
-      // root.userData.click += 1;
-      // highlightModel(root, null);
-    } else {
-
-
-      // console.log(event, ' exse');
-      // current.userData.click = 0;
-      // addHightLight(current)
-      // console.log("event exception  ", current.userData.click);
     }
 
   }
-
 }
 //  ОБРАБОТЧИКИ СОБЫТИЙ
-// РАЗОБРАТЬСЯ С ТЕМ КАК ПРИВЯЗАНЫ СОБЫТИЯ ВНУТРИ КОМПОНЕНТА - ОНИ ПРИ ПЕРЕРЕНДЕРЕ ЗАНОВО ПОДВЯЗЫВВАЮТСЯ?
+
 control.addEventListener("mouseUp", (event) => sendPosition(event, transformControledModel));
 window.addEventListener("resize", () => onWindowResize(cameraPersp, renderer));
 canvas.addEventListener("mousedown", onClick);
 
 // функции только для three js 
-
+function main() {
+  init();
+  animate();
+}
 function render() { // не переносится 
   renderer.render(scene, cameraPersp);
+}
+function init() {
+  initRenderer(renderer);
+  initScene(scene);
+  initCamera(cameraPersp);
+  initPointLight(scene);
+  // initFloor(scene);
+  initControls(cameraPersp, renderer.domElement);
+  initOutlineComposer(scene, cameraPersp, renderer); // для обводки
+  ref.current.appendChild(renderer.domElement);
 }
 
 function animate() {

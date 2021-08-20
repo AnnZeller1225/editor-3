@@ -2,6 +2,7 @@ import cloneDeep from "lodash/cloneDeep";
 // import { act } from "react-dom/cjs/react-dom-test-utils.production.min";
 const initialState = {
     project_1: {
+        // модели
         surfaces: [
 
             {
@@ -32,7 +33,7 @@ const initialState = {
                 name: "Стол круглый",
                 type: "MODEL",
                 url: "./models/table_03.glb",
-                dots: { x: "1", y: "0", z: "0" },
+                dots: { x: "-2", y: "0", z: "0" },
                 rotate: 0,
                 moveOnly: "XZ",
                 visible: true,
@@ -95,10 +96,11 @@ const initialState = {
             //   locked: false,
             // }
         ],
+        // стены  
         walls: [
             // {
-            //     name: "wall_1",
-            //     type: "wall",
+            //     name: "Стена_1",
+            //     type: "WALL",
             //     id: "100",
             //     dots: { x: "0", z: "0", x2: "0", z2: "2" },
             //     width: "0.1",
@@ -108,7 +110,7 @@ const initialState = {
             //         id: "1",
             //         width: "0.5",
             //         height: "0.5",
-            //         url: "обои2.jpg",
+            //         url: "обои.jpg",
             //     },
             //     {
             //         // потолок
@@ -134,79 +136,100 @@ const initialState = {
             //     ],
             // },
             // {
-            //   name: "wall_2",
-            //   id: "101",
-            //   type: "wall",
-            //   dots: { x: "0", z: "2", x2: "3", z2: "2" },
-            //   width: "0.1",
-            //   height: "1",
-            //   textures: [
-            //     {
-            //       // фронтальная часть
-            //       id: "1",
-            //       width: "0.5",
-            //       height: "0.5",
-            //       url: "50.jpg",
-            //     },
-            //     {
-            //       // потолок
-            //       id: "2",
-            //       width: "0.2", //длина кирпича
-            //       height: "0.1", // ширина
-            //       url: "kirp.jpg",
-            //     },
-            //     {
-            //       //  боковые
-            //       id: "3",
-            //       width: "0.1",
-            //       height: "0.1",
-            //       url: "2323.jpg",
-            //     },
-            //     {
-            //       // внутренная часть
-            //       id: "1",
-            //       width: "0.5",
-            //       height: "0.5",
-            //       url: "50.jpg",
-            //       // url: "Inkedplitka-long_LI.jpg",
-            //     },
-            //   ],
+            //     name: "Стена_2",
+            //     id: "101",
+            //     type: "WALL",
+            //     dots: { x: "0", z: "2", x2: "3", z2: "2" },
+            //     width: "0.1",
+            //     height: "1",
+            //     textures: [
+            //         {
+            //             // фронтальная часть
+            //             id: "1",
+            //             width: "0.5",
+            //             height: "0.5",
+            //             url: "50.jpg",
+            //         },
+            //         {
+            //             // потолок
+            //             id: "2",
+            //             width: "0.2", //длина кирпича
+            //             height: "0.1", // ширина
+            //             url: "kirp.jpg",
+            //         },
+            //         {
+            //             //  боковые
+            //             id: "3",
+            //             width: "0.5",
+            //             url: "50.jpg",
+            //             height: "0.5",
+            //         },
+            //         {
+            //             // внутренная часть
+            //             id: "1",
+            //             width: "0.5",
+            //             height: "0.5",
+            //             url: "50.jpg",
+            //             // url: "Inkedplitka-long_LI.jpg",
+            //         },
+            //     ],
             // },
         ],
-        floor: {
-            name: "Пол",
-            id: "1",
-            type: "FLOOR_SHAPE",
-            texture: {
-                width: "0.5",
-                url: "lam2.jpeg",
-            },
+        // пол
+        floorCeiling: [
+            {
+                name: "Пол",
+                id: "1",
+                type: "FLOOR_SHAPE",
+                texture: {
+                    width: "0.5",
+                    url: "lam2.jpeg",
+                },
 
-            dots: [
-                { x: "0", y: "0", z: "0" },
-                { x: "0", y: "0", z: "15" },
-                { x: "20", y: "0", z: "15" },
-                { x: "20", y: "0", z: "10" },
-                { x: "10", y: "0", z: "0" },
-                { x: "0", y: "0", z: "0" },
-            ],
-        },
+                dots: [
+                    { x: "0", y: "0", z: "0" },
+                    { x: "0", y: "0", z: "15" },
+                    { x: "20", y: "0", z: "15" },
+                    { x: "20", y: "0", z: "10" },
+                    { x: "10", y: "0", z: "0" },
+                    { x: "0", y: "0", z: "0" },
+                ],
+            },
+            {
+                name: "Потолок",
+                id: "2",
+                type: "FLOOR_SHAPE",
+                texture: {
+                    width: "0.5",
+                    url: "обои3.jpg",
+                },
+
+                dots: [
+                    { x: "0", y: "2.8", z: "0" },
+                    { x: "0", y: "2.8", z: "15" },
+                    { x: "20", y: "2.8", z: "15" },
+                    { x: "20", y: "2.8", z: "10" },
+                    { x: "10", y: "2.8", z: "0" },
+                    { x: "0", y: "2.8", z: "0" },
+                ],
+            },
+        ]
 
     },
 
     activeObject: {
-        wall: '',
+        wall: {},
         surface: {},
         replaceBy: '',
         action: '', // для поворота или мувинга модели
-        changeVisible:{
+        changeVisible: {
             obj: {},
             action: ''
         },
         isSave: false, // для модалки
         newTexture: {},
         newModel: {},
-        typeOfChange:'',
+        typeOfChange: '',
         selectedModel: {},
         lockModel: {},
         locking: {},
@@ -215,7 +238,7 @@ const initialState = {
 
     // выбранные из списков а не по клику
     activeInList: {
-        wall: '',
+        wall: {},
         surface: {},
         replaceBy: '',
         action: '',
@@ -317,14 +340,14 @@ const initialState = {
             url: "паркет.jpg",
         },
         {
-            name: "обои", // кирпич
+            name: "обои зеленые", // кирпич
             id: "6",
             width: "1", //длина кирпича
             height: "1", // ширина
             url: "обои.jpg",
         },
         {
-            name: "обои2", // кирпич
+            name: "обои белые", // кирпич
             id: "7",
             width: "1", //длина кирпича
             height: "1", // ширина
@@ -386,7 +409,7 @@ const changeVisibilityModel = (state, payload) => {
     return {
         ...state,
         project_1: updateState,
-        activeObject: { ...activeObject, changeVisible: { obj: model, action: 'change_visibility'} }
+        activeObject: { ...activeObject, changeVisible: { obj: model, action: 'change_visibility' } }
     };
 };
 
@@ -422,20 +445,21 @@ const selectModel = (state, payload, from) => {
         locked: locked
     }
 
+    let activeModel;
+    // не понятно зачем но пусть будет 
+    // if (from) {
+    //     activeModel = updateModel;
+    // } else {
+    //     activeModel = payload.id !== activeObject.selectedModel?.id ? updateModel : {};
+    // }
 
     // тут сбрасывает на пустой массив когда кликаешь по одному и тому же
-    let activeModel;
-    if (from) {
-        activeModel = updateModel;
-    } else {
-        activeModel = payload.id !== activeObject.selectedModel?.id ? updateModel : {};
-    }
-
+    activeModel = payload.id !== activeObject.selectedModel?.id ? updateModel : {};
     if (activeModel?.id) {
         return {
             ...state,
-            activeObject: { ...activeObject, selectedModel: activeModel },
-            activeInList: { ...activeInList, selectedModel: {} }
+            activeObject: { ...activeObject, wall: {}, selectedModel: activeModel, surface: {} },
+            activeInList: { ...activeInList, selectedModel: {}, wall: {}, surface: {}}
         };
 
     } else {
@@ -500,13 +524,13 @@ const selectTypeOfChange = (state, payload, el) => {
         return {
             ...state,
             modal: { ...modal, typeOfChange: payload, isOpen: true },
-            activeObject: { ...activeObject, deleting: el, typeOfChange: payload},
+            activeObject: { ...activeObject, deleting: el, typeOfChange: payload },
             modalForConfirm: {
                 ...modalForConfirm,
                 isOpen: true
             }
         };
-    } else if (payload === 'drag' || payload === 'rotate'){
+    } else if (payload === 'drag' || payload === 'rotate') {
         let status = modal.typeOfChange === payload ? 'reset' : payload;
         return {
             ...state,
@@ -541,6 +565,7 @@ const resetSelectedModel = (state) => {
             wall: '',
             surface: {},
             newModel: {},
+            typeOfChange: '',
             isSave: false
         },
         modalForConfirm: {
@@ -570,32 +595,52 @@ const selectTexture = (state, id) => {
     };
 }
 const selectWall = (state, id, sideIndex) => {
-    const { project_1, activeObject } = state;
+    const { project_1, activeObject, activeInList } = state;
     const index = findIndex(project_1.walls, id);
     const wall = project_1.walls[index];
-    // console.log(' выбрали стену ', wall, sideIndex)
-    return {
-        ...state,
-        activeObject: {
-            ...activeObject,
-            wall: { ...wall, sideInd: sideIndex },
-        },
-    };
-};
-const selectSurface = (state, id) => {
-    const { activeObject, project_1 } = state;
-    if (activeObject.surface.id === project_1.floor.id) {
+
+    let activeWall = id !== activeObject.wall?.id ? wall : {};
+
+    if (activeWall?.id) {
+
         return {
             ...state,
-            activeObject: { ...activeObject, surface: {}, selectedModel: {} },
+            activeObject: { ...activeObject, selectedModel: {}, wall: { ...activeWall, sideInd: sideIndex } },
+            activeInList: { ...activeInList, selectedModel: {} }
         };
+
     } else {
         return {
             ...state,
-            activeObject: { ...activeObject, surface: project_1.floor, selectedModel: {} },
+            activeObject: { ...activeObject, wall: {}, selectedModel: {} },
+            activeInList: { ...activeInList, selectedModel: {}, wall: {}, }
         };
     }
+};
 
+const selectSurface = (state, id) => {
+
+    const { activeObject, project_1, activeInList } = state;
+
+    const index = findIndex(project_1.floorCeiling, id);
+    const surf = project_1.floorCeiling[index];
+
+    if (activeObject.surface?.id === surf.id) {
+        console.log('activeObject surface disp');
+        return {
+            ...state,
+            activeObject: { ...activeObject, surface: {}, selectedModel: {}, wall: {} },
+            activeInList: { ...activeInList, surface: {}, selectedModel: {}, wall: {}}
+        };
+    } else {
+        console.log('esception surface disp');
+        return {
+            ...state,
+            activeObject: { ...activeObject, surface: surf, selectedModel: {}, wall: {} },
+            activeInList: { ...activeInList, surface: {}, selectedModel: {}, wall: {} }
+        };
+    }
+// return state
 };
 const resetModal = (state) => {
     const { modal } = state;
@@ -606,10 +651,8 @@ const resetModal = (state) => {
 
 const getSurface = (obj, state) => {
     const { project_1 } = state;
-    // const index = findIndex(project_1.surface, wall.id);
-    let surf = project_1.floor;
+    let surf = project_1.floorCeiling;
     surf.texture = obj.newTexture
-
     return surf
 }
 
@@ -637,7 +680,8 @@ const saveChanges = (state) => {
     let updateObject;
     const surfaces = project_1.surfaces;
     // меняем текстуру в редаксе 
-    if (activeObject.action === 'change_texture') {
+    if (activeObject.typeOfChange === 'change_texture') {
+
         if (activeObject.surface.id) {
             updateObject = getSurface(activeObject, state)
             return {
@@ -809,7 +853,7 @@ const selectedInModelList = (state, payload) => {
     const { activeInList, activeObject } = state;
     let { id, name, type, url, dots, rotate, moveOnly, visible, locked } = payload;
 
-    let updateModel = {
+    let updateObj = {
         id: id,
         name: name,
         type: type,
@@ -821,30 +865,47 @@ const selectedInModelList = (state, payload) => {
         locked: locked
     }
 
-    let activeModel = payload.id !== activeInList.selectedModel?.id ? updateModel : {};
+    let activeObj;
+    if (updateObj.type === 'MODEL') {
+        activeObj = payload.id !== activeInList.selectedModel?.id ? updateObj : {};
+    } else if (updateObj.type === 'WALL') {
+        activeObj = payload.id !== activeInList.wall?.id ? updateObj : {};
+    } if (updateObj.type === 'FLOOR_SHAPE') {
+        activeObj = payload.id !== activeInList.surface?.id ? updateObj : {};
+    }
 
 
-    if (activeModel?.id) {
-        return {
-            ...state,
-            activeInList: { ...activeInList, selectedModel: activeModel },
-            // activeObject: { ...activeObject, selectedModel: {} }
-        };
+
+
+    if (activeObj?.id) {
+
+        if (activeObj.type === 'MODEL') {
+            return {
+                ...state,
+                activeInList: { ...activeInList, selectedModel: activeObj, surface: {} },
+            };
+        } else if (activeObj.type === 'WALL') {
+            return {
+                ...state,
+                activeInList: { ...activeInList, wall: activeObj, surface: {}, selectedModel: {} },
+            };
+        } else if (activeObj.type === 'FLOOR_SHAPE') {
+            return {
+                ...state,
+                activeInList: { ...activeInList, surface: activeObj, wall: {}, selectedModel:{} },
+            };
+        }
+
+
     } else {
         return {
             ...state,
-            activeInList: { ...activeInList, selectedModel: {} },
-            activeObject: { ...activeObject, selectedModel: {}, action: '' }
+            activeInList: { ...activeInList, selectedModel: {}, wall: {}, surface: {} },
+            activeObject: { ...activeObject, selectedModel: {}, wall: {}, surface: {}  }
         };
     }
-
-    // return {
-    //     ...state,
-    //     // activeInList: { ...activeInList, selectedModel: activeModel },
-    //     activeObject: { ...activeObject, selectedModel: activeModel}
-    // };
-
 }
+
 const resetTC = (state, payload) => {
     const { resetTransformControl } = state;
 
@@ -1126,7 +1187,7 @@ export default reducer;
 
 // {
 //   id: "1",
-//   type: "wall",
+//   type: "WALL",
 //   dots: { x: "0", z: "0", x2: "2", z2: "0" },
 //   width: "0.1",
 //   height: "1",
@@ -1156,7 +1217,7 @@ export default reducer;
 // },
 // {
 //   id: "4",
-//   type: "wall",
+//   type: "WALL",
 //   dots: { x: "-1", z: "0", x2: "-2", z2: "1" },
 //   width: "0.1",
 //   height: "1",
@@ -1187,7 +1248,7 @@ export default reducer;
 
 // {
 //   id: "7",
-//   type: "wall",
+//   type: "WALL",
 //   dots: { x: "-1", z: "2", x2: "-1", z2: "3" },
 //   width: "0.1",
 //   height: "1",
