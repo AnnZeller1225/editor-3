@@ -281,8 +281,9 @@ function getSharpTexture(texture) {
 }
 
 function getChangeTextureFloor(obj, scene) {
+    console.log(obj);
     scene.children.forEach((el) => {
-        if (el.type === "Mesh" && el.userData.type === obj.surface.type) {
+        if (el.type === "Mesh" && el.userData.type === obj.surface.type  && el.userData.id === obj.surface.id) {
             let texture = getSharpTexture(obj.newTexture);
             var mat = new THREE.MeshBasicMaterial({ map: texture });
             el.material = mat;

@@ -41,8 +41,8 @@
 .list {
   background: rgb(223, 223, 223);
   padding: 10px;
-  margin-top: 20px;
-  margin-bottom: 20px;
+  /* margin-top: 20px; */
+  /* margin-bottom: 20px; */
   /* border: 1px solid red; */
   width: 100%;
   max-width: 300px;
@@ -52,7 +52,7 @@
 }
 .instrum {
   width: 100%;
-  max-width: 500px;
+  max-width: 650px;
   display: flex;
   justify-content: space-around;
   /* border: 1px solid rgb(160, 30, 30); */
@@ -61,8 +61,10 @@
   /* background: rgb(240, 239, 173); */
   padding: 10px;
   width: 100%;
-  max-width: 700px;
+  /* max-width: 1200px; */
   display: flex;
+  margin-top: -35px;
+  justify-content: flex-end;
   /* justify-content: space-between; */
 }
 .controls-btn {

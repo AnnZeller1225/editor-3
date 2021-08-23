@@ -39,7 +39,7 @@ h2 {
     font-size: 17px;
 }
 
-span {
+.block-title {
     padding: 3px;
     font-style: italic;
 }

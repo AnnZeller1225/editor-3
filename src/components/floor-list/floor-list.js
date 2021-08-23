@@ -14,32 +14,56 @@ import "./floor-list.css";
 
 const FloorList = ({
   project_1,
-  selectModel,
-  changeVisibilityModel,
-  lockModel, activeInList,
-  activeObject, selectedInModelList, selectTypeOfChange
+  dispatchSelectModel,
+  dispatchChangeVisibilityModel,
+  dispatchLocModel, activeInList,
+  activeObject, selectedInModelList, dispatchSelectTypeOfChange, dispatchSelectSurface, dispatchSelectWall
 }) => {
-// вывести в 1 переменную 
-  let activeModel = activeInList.selectedModel.id;
-  let activeModel2 = activeObject.selectedModel.id;
+  // по скользку есть ошибка с позиционированием всего блока стен, индексы берутся примерные - при перерасчетах будем переделывать ( не соблюден угол поворота стен, ошибка в 45градусов)
+
+  const insideWallInd = 4; // внутренняя сторона
+  const outsideWallInd = 5;  // внешняя сторона
 
 
-  let activeWall = activeInList.wall.id;
-  let activeWall2 = activeObject.wall.id;
+  let activeModelId = activeInList.selectedModel.id ? activeInList.selectedModel.id : activeObject.selectedModel.id;
+  // let activeModel2 = activeObject.selectedModel.id;
 
-  let activeFloor = activeInList.surface.id;
-  let activeFloor2 = activeObject.surface.id;
+  let activeFloorId = activeInList.surface.id ? activeInList.surface.id : activeObject.surface.id;
 
+  let activeWallId = activeObject.wall.id ? activeObject.wall.id : activeInList.wall.id;
+  let indexWall = activeObject.wall.id ? activeObject.wall.sideInd : activeInList.wall.sideInd
   const { surfaces, walls } = project_1;
   const { floorCeiling } = project_1;
 
   const handlerCLickModel = (el) => {
-    selectModel(el, 'from-list');
-    selectTypeOfChange('replace')
+    if (el.id !== activeModelId) {
+      dispatchSelectModel(el, 'from-list');
+      dispatchSelectTypeOfChange('replace')
+
+    } else {
+      dispatchSelectTypeOfChange('replace')
+    }
   }
-  const handlerCLickSurface = (el) => {
-    selectModel(el, 'from-list');
-    selectTypeOfChange('change_texture')
+  const handlerCLickSurface = (el, sideInd) => {
+    if (!sideInd) { // если это не стена
+      if (el.id !== activeFloorId) {
+        dispatchSelectSurface(el.id, 'from-list');
+        dispatchSelectTypeOfChange('change_texture')
+
+      } else {
+        dispatchSelectTypeOfChange('change_texture')
+      }
+    } else {
+      if (el.id !== activeWallId) {
+        dispatchSelectWall(el.id, sideInd);
+        dispatchSelectTypeOfChange('change_texture')
+
+      } else {
+        dispatchSelectTypeOfChange('change_texture')
+      }
+    }
+
+
   }
   return (
     <div className="floor-list-wrap">
@@ -47,12 +71,12 @@ const FloorList = ({
         <div className="block">
           <span className="block-title">Мебель</span>
           <div className="list">
-          {/* МЕБЕЛЬ */}
+            {/* МЕБЕЛЬ */}
             {surfaces.map((el, index) => (
 
               <div className="list-item-w" key={index}>
                 <div
-                  className={el.id === (activeModel || activeModel2) ? "list-item active" : "list-item"}
+                  className={el.id === activeModelId ? "list-item active" : "list-item"}
 
                   id={el.id}
                   onClick={() => selectedInModelList(el)}
@@ -62,13 +86,13 @@ const FloorList = ({
                 <div className="list-item-wrap-img">
                   <div
                     className="list-item-img"
-                    onClick={() => lockModel(el.id)}
+                    onClick={() => dispatchLocModel(el.id)}
                   >
                     <img src={el.locked ? lockImg : unlockImg} alt="Logo" />
                   </div>
                   <div
                     className="list-item-img"
-                    onClick={() => changeVisibilityModel(el)}
+                    onClick={() => dispatchChangeVisibilityModel(el)}
                   >
                     <img src={el.visible ? visibleEye : hideEye} alt="Logo" />
                   </div>
@@ -82,7 +106,7 @@ const FloorList = ({
                   </div>
                   <div
                     className="list-item-img"
-                    onClick={() => selectTypeOfChange("delete_model", el)}
+                    onClick={() => dispatchSelectTypeOfChange("delete_model", el)}
                   >
                     <img src={basketImg} alt="Logo" />
                   </div>
@@ -96,22 +120,56 @@ const FloorList = ({
           <span className="block-title">Комната</span>
           <div className="list">
             {walls.map((el, index) => (
-              <div className="list-item-w" key={index}>
+
+              <div className={el.id === activeWallId ? "list-item-w active-t" : "list-item-w"} key={index}>
+                <p className="list-item__title">{el.name}</p>
+
                 <div
-                  className={el.id === (activeWall || activeWall2) ? "list-item active" : "list-item"}
-                  id={el.id}
-                  onClick={() => selectedInModelList(el)}
+                  className={el.id === activeWallId && indexWall === insideWallInd ? "list-item active-t2" : "list-item"}
                 >
-                  {el.name}
+                  <span onClick={() => handlerCLickSurface(el, insideWallInd)}>
+                  {el.textures[2].name}
+                </span>
+                  <div
+                    className="list-item-img"
+                    onClick={() => handlerCLickSurface(el, insideWallInd)}
+                  >
+                    <img src={editImg} alt="Logo" />
+                  </div>
                 </div>
-                <div className="list-item-wrap-img">
+                <div
+                  className={el.id === activeWallId && indexWall === outsideWallInd ? "list-item active-t2" : "list-item"}
+
+                  // onClick={() => handlerCLickSurface(el, outsideWallInd)}
+
+                >
+                  <span onClick={() => handlerCLickSurface(el, outsideWallInd)}>
+                    {el.textures[3].name}
+                    </span>
+                  {/* {el.textures[3].name} */}
+
+                  <div
+                    className="list-item-img"
+                    onClick={() => handlerCLickSurface(el, outsideWallInd)}
+                  >
+                    <img src={editImg} alt="Logo" />
+                  </div>
+                </div>
+                {/* {el.name}
+                  <div className="list-item__sub">
+                    {el.textures[2].name}
+                    </div>
+                  <div className="list-item__sub">
+                    {el.textures[3].name}</div> */}
+
+                {/* <div className="list-item-wrap-img">
                   <div
                     className="list-item-img"
                     onClick={() => handlerCLickSurface(el)}
                   >
                     <img src={editImg} alt="Logo" />
                   </div>
-                </div>
+                </div> */}
               </div>
             ))}
 
@@ -119,7 +177,7 @@ const FloorList = ({
             {floorCeiling.map((el, index) => (
               <div className="list-item-w" key={index}>
                 <div
-                  className={el.id === (activeFloor || activeFloor2) ? "list-item active" : "list-item"}
+                  className={el.id === activeFloorId ? "list-item active" : "list-item"}
                   id={el.id}
                   onClick={() => selectedInModelList(el)}
                 >
@@ -135,25 +193,6 @@ const FloorList = ({
                 </div>
               </div>
             ))}
-
-            {/* <div className="list-item-w" key="0">
-              <div
-                className={floor.id === (activeFloor || activeFloor2) ? "list-item active" : "list-item"}
-                id={floor.id}
-                onClick={() => selectedInModelList(floor)}
-              >
-                {floor.name}
-              </div>
-              <div className="list-item-wrap-img">
-                <div
-                  className="list-item-img"
-                  onClick={() => handlerCLickSurface(floor)}
-                >
-                  <img src={editImg} alt="Logo" />
-                </div>
-              </div>
-            </div> */}
-
 
           </div>
         </div>

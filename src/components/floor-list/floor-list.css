@@ -6,16 +6,25 @@
 }
 .floor-w {
     /* margin-top: -150px; */
-    display: flex;
-    justify-content: space-between;
+    /* display: flex; */
+    /* justify-content: space-between; */
     width: 100%;
     max-width: 900px;
     /* padding-bottom:  20px; */
     /* display: none; */
 }
+.floor-list-wrap {
+    display: flex;
+    justify-content: space-between;
+}
+.canvas {
+    width: 100%;
+    max-width: 736px !important;
+    height: 600px !important;
+}
 .list-item-wrap-img {
     width: 100%;
-    max-width: 120px;
+    max-width: 80px;
     display: flex;
 
     /* width: 25%;
@@ -24,9 +33,14 @@
      */
     /* border: 1px solid red; */
 }
+.list-item span:hover {
+background-color: rgb(236, 236, 236);
+}
 .block {
-    width: 48%;
+    /* width: 63%; */
     /* width: 400px; */
+    width: 100%;
+    max-width: 225px;
 }
 .todo {
     width: 33%;
@@ -42,10 +56,12 @@
     padding-top: 3px;
     width: 100%;
     max-width: 25px;
+    transition: 0.2s linear;
     /* border: 1px solid red; */
-    /* margin-right: 3px; */
 }
-
+.list-item-img:hover {
+    background-color: #fff;
+}
 
 .list-item-img img, .furniture-list-img {
     width: 100%;
@@ -71,15 +87,20 @@ body {
 }
 .list-item{
     width: 100%;
-    max-width: 150px;
+    max-width: 130px;
 /* width: 200px; */
 /* width: 80%; */
     border: 1px solid rgba(0, 0, 0, 0.377);
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
 }
 .list-item-w {
     transition: 0.1s linear;
     width: 100%;
     max-width: 450px;
+    flex-wrap: wrap;
+    /* padding: 5px; */
 }
 .list-item:hover {
     /* background-color: rgba(152, 105, 196, 0.151); */
@@ -88,4 +109,16 @@ body {
 .active {
     background-color: rgba(61, 36, 129, 0.205);
     outline: 1px solid rgb(14, 6, 43);
+}
+.active-t {
+        background-color: rgba(255, 255, 255, 0.651);
+        /* outline: 1px solid rgb(61, 61, 61); */
+}
+.active-t2 {
+        background-color: rgba(34, 33, 33, 0.651);
+        /* outline: 1px solid rgb(61, 61, 61); */
+}
+.list-item__title {
+    width: 100%;
+    max-width: 700px;
 }

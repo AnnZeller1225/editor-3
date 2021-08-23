@@ -16,7 +16,6 @@ import {
   isCollision,
   getMouseCoord,
   hideTransformControl,
-  polygonShape,
   replaceModelFromCollision,
   replaceElemFromArr,
   changeVisibility, changeTextureWall,
@@ -49,7 +48,7 @@ let scene,
   updateUseEffectListClick,
   updateUseEffectLock,
   clock,
-  // axesHelper,
+  axesHelper,
   outlinedArr,
   movingStatus,
   needOutline,
@@ -61,7 +60,7 @@ let scene,
 initGlobalLets();
 initUseEffects();
 // список useEffect
-let selectWallDispatch, selectSurfaceDispatch, resetSelectedModelDispatch, changePositionModelDispatch, selectModelDispatch;
+let dispatchGlobalSelectWall, dispatchGobalSelectSurface, dispatchGlobalResetSelectedModel, dispatchGlobalChangePositionModel, dispatchGlobalSelectModel;
 const canvas = renderer.domElement;
 
 let clickManager = new InteractionManager(
@@ -89,16 +88,16 @@ let ref;
 // привязка к control событий каждый раз дублируется при перерендере
 const FloorPlane = ({
   project_1,
-  changePositionModel,
   camera,
-  selectWall,
-  selectModel,
-  selectSurface,
+  dispatchChangePositionModel,
+  dispatchSelectWall,
+  dispatchSelectModel,
+  dispatchSelectSurface,
+  dispatchResetNewModel,
+  dispatchResetSelectedModel,
   activeObject,
-  resetNewModel,
   modalForConfirm,
-  resetSelectedModel,
-  resetLockModel, activeInList,
+  dispatchResetLockModel, activeInList,
 }) => {
   cameraStatus = camera.status;
   ref = useRef();
@@ -178,7 +177,7 @@ const FloorPlane = ({
       // loadModel2(activeObject.newModel);
       loadModel(activeObject.newModel);
       updateForAddModel = false;
-      resetNewModel(); // после загрузки модели сбрасываем выбранну. модели в модалке
+      dispatchResetNewModel(); // после загрузки модели сбрасываем выбранну. модели в модалке
     }
 
   }, [addModel]);  // eslint-disable-line react-hooks/exhaustive-deps
@@ -221,6 +220,7 @@ const FloorPlane = ({
 
     }
   }, [moveModel]);  // eslint-disable-line react-hooks/exhaustive-deps
+
   // добавляем вращение
   useEffect(() => {
     if (activeObject.action === "rotate") {
@@ -229,6 +229,7 @@ const FloorPlane = ({
 
     }
   }, [rotateModel]);  // eslint-disable-line react-hooks/exhaustive-deps
+
   // обновление текстуры для стен
   useEffect(() => {
     if (updateUseEffectTexture) {
@@ -236,7 +237,7 @@ const FloorPlane = ({
       updateUseEffectTexture = !updateUseEffectTexture;
 
       changeTextureWall(activeObject.wall, activeObject.newTexture, scene);
-      resetSelectedModel();
+      dispatchResetSelectedModel();
     }
   }, [changeTexture]);// eslint-disable-line react-hooks/exhaustive-deps
 
@@ -257,11 +258,22 @@ const FloorPlane = ({
     if (updateUseEffectTexture__floor) {
       updateUseEffectTexture__floor = !updateUseEffectTexture__floor;
       getChangeTextureFloor(activeObject, scene);
-      resetSelectedModel();
+      dispatchResetSelectedModel();
     }
   }, [changeTextureFloor]);  // eslint-disable-line react-hooks/exhaustive-deps
 
-
+  function checkUpdateTexture__floor() {
+    // console.log(updateUseEffectTexture__floor, activeObject.typeOfChange, activeObject.surface.id, activeObject.newTexture, activeObject.isSave);
+    if (
+      updateUseEffectTexture__floor === false && activeObject.typeOfChange === "change_texture" &&
+      activeObject.surface.id &&
+      activeObject.newTexture && activeObject.isSave
+    ) {
+      setChangeTextureFloor(changeTextureFloor + 1);
+      updateUseEffectTexture__floor = true;
+      // console.log(' меняем текструру');
+    }
+  }
 
   // замена модели
   useEffect(() => {
@@ -293,7 +305,7 @@ const FloorPlane = ({
     ) {
       updateUseEffectDelete = false;
       deleteModelFromScene(activeObject.deleting);
-      resetSelectedModel(); // диспатч 
+      dispatchResetSelectedModel(); // диспатч 
       // удаляем стрелки
       // showAxesControl(activeObject.typeOfChange, control);
       // movingStatus = "reset";
@@ -412,7 +424,7 @@ const FloorPlane = ({
   function getChangeLock(activeObject, isActive) {
     //isActive - является ли он активным в сцене или мы кликнули в список, не активируя его, лишь меняя lock
     let model = isActive ?
-      findModel(scene.children, activeObject.lockModel.id) : findModel(scene.children, activeObject.locking.id);
+      findModel(scene.children, activeObject.lockModel) : findModel(scene.children, activeObject.locking);
 
     model.userData.locked = !model.userData.locked;
     if (isActive) {
@@ -420,16 +432,16 @@ const FloorPlane = ({
       if (activeObject.lockModel.locked) {
         console.log(' блокируем стрелки ');
         hideTransformControl(control);
-        resetLockModel();
+        dispatchResetLockModel();
       } else {
         console.log('добавим стрелки');
         addTransformControl(model);
-        resetLockModel();
+        dispatchResetLockModel();
       }
     } else {
       console.log(' блокируем стрелки у не активного');
       // model.userData.locked = true;
-      resetLockModel();
+      dispatchResetLockModel();
     }
   }
 
@@ -440,12 +452,11 @@ const FloorPlane = ({
 
 
   function updateDispatches() {
-    selectWallDispatch = selectWall; // для передачи локального dispach в addEventListener внешний
-    selectSurfaceDispatch = selectSurface;
-    // selectTypeOfChangeDispatch = selectTypeOfChange;
-    changePositionModelDispatch = changePositionModel;
-    selectModelDispatch = selectModel;
-    resetSelectedModelDispatch = resetSelectedModel;
+    dispatchGlobalSelectWall = dispatchSelectWall; // для передачи локального dispach в addEventListener внешний
+    dispatchGobalSelectSurface = dispatchSelectSurface;
+    dispatchGlobalChangePositionModel = dispatchChangePositionModel;
+    dispatchGlobalSelectModel = dispatchSelectModel;
+    dispatchGlobalResetSelectedModel = dispatchResetSelectedModel;
   }
 
 
@@ -504,16 +515,7 @@ const FloorPlane = ({
 
 
 
-  function checkUpdateTexture__floor() {
-    if (
-      updateUseEffectTexture__floor === false && activeObject.action === "change_texture" &&
-      activeObject.surface.id &&
-      activeObject.newTexture && activeObject.isSave
-    ) {
-      setChangeTextureFloor(changeTextureFloor + 1);
-      updateUseEffectTexture__floor = true;
-    }
-  }
+
   function checkUpdateInstrum() {
     if (
       activeObject.action === "reset" &&
@@ -529,7 +531,7 @@ const FloorPlane = ({
 
   return (
     <>
-      <div ref={ref} />
+      <div className="canvas" ref={ref} />
       {
         // console.count()
       }
@@ -639,14 +641,13 @@ function isSameModel(prev, next) {
 function addHightLight(root, status) {
   if (root?.visible && root.parent && cameraStatus !== 'panorama' && !control.userData.active) {
     root.userData.click += 1;
-    console.log(' add HL');
     highlightModel(root, status);
 // если это модель,  не заблочена и если ей нужны стрелки 
     if (needArrow && !root.userData.locked && (root.userData.type !== "WALL" || root.userData.type !== "FLOOR_SHAPE" )) {
       transformControledModel = root;
       addTransformControl(root);
     } else {
-      console.log(' скрываем остальные  стрелки');
+      // console.log(' скрываем остальные  стрелки');
       hideTransformControl(control)
     }
   }
@@ -654,8 +655,9 @@ function addHightLight(root, status) {
 }
 
 
+
 function deleteModelFromScene(modelLson) {
-  let model = findModel(scene.children, modelLson.id);
+  let model = findModel(scene.children, modelLson);
   model.material = undefined;
   model.geometry = undefined;
 
@@ -701,7 +703,9 @@ function initGlobalLets() {
   checkCollisionModels = []; // массив всех объектов для пересечения
   control = new TransformControls(cameraPersp, renderer.domElement);
   gltfLoader = new GLTFLoader();
-  // axesHelper = new THREE.AxesHelper(15);
+  axesHelper = new THREE.AxesHelper(15);
+  scene.add(axesHelper)
+
   movingStatus = null;
   clock = new THREE.Clock();
   wallList = []; // список стен доступных для клика
@@ -803,7 +807,7 @@ function sendPosition(event, model) {
     rotate: event.target._plane.object.rotation.y,
     id: event.target._plane.object.userData.id,
   };
-  changePositionModelDispatch(modelInfo);
+  dispatchGlobalChangePositionModel(modelInfo);
 }
 function removeHightLight(model) {
   control.visible = false;
@@ -813,7 +817,7 @@ function removeHightLight(model) {
   outlinePass.selectedObjects = selectedObjects;
   addSelectedObject(model);
   if (model.userData.type === 'MODEL' || model.userData.type === 'FLOOR_SHAPE') {
-    resetSelectedModelDispatch();
+    dispatchGlobalResetSelectedModel();
     hideTransformControl(control);
   }
 }
@@ -843,15 +847,15 @@ function highlightModel(model) {
     if (model.userData.click % 2 > 0 && isSelected(model) === false) {
 
       if (isModel(model)) {
-        selectModelDispatch(model.userData);
+        dispatchGlobalSelectModel(model.userData);
       } else if (isSurface(model)) {
-        selectSurfaceDispatch(model.userData.id)
+        dispatchGobalSelectSurface(model.userData.id)
       
         // break
       }
       // debugger;
       removeAllHightLight(scene.children, model);
-      console.log(" добавляем подсветку, удаляя предыдущие ");
+      // console.log(" добавляем подсветку, удаляя предыдущие ");
       needArrow = true;
       needOutline = true;
       model.userData.selected = true;
@@ -862,45 +866,34 @@ function highlightModel(model) {
     else if (model.userData.click % 2 === 0 && model.userData.click > 1) {
 
       if (isModel(model)) {
-        selectModelDispatch(model.userData);
+        dispatchGlobalSelectModel(model.userData);
 
       } 
       else if (isSurface(model)) {
-        selectSurfaceDispatch(model.userData.id)
+        dispatchGobalSelectSurface(model.userData.id)
       }
-      console.log(" кликнутая модель");
+      // console.log(" кликнутая модель");
       model.userData.selected = true;
       needOutline = true;
       removeAllHightLight(scene.children, model);
     } else if (isSelected(model)) {
       if (isModel(model)) {
-        selectModelDispatch(model.userData);
+        dispatchGlobalSelectModel(model.userData);
       } else if (isSurface(model)) {
-        selectSurfaceDispatch(model.userData.id)
+        dispatchGobalSelectSurface(model.userData.id)
       }
       // если повторно кликаем на одну и ту же модель
-      console.log("кликаем на одну и ту же модель");
+      // console.log("кликаем на одну и ту же модель");
       needArrow = false;
       needOutline = false;
       removeHightLight(model);
       model.userData.selected = false;
       movingStatus = null; // если нужно оставлять стрелки после снятия выделения - убрать null 
-      // resetSelectedModelDispatch()
+      // dispatchGlobalResetSelectedModel()
     }
   }
 
 }
-
-
-// function onClick(event) {
-//   if (cameraStatus !== 'panorama') {
-//     getMouseCoord(event, canvas, mouse);
-//     checkingClick();
-//   } else {
-//     // нужно выделять както стену после того как двигали модель
-//   }
-// }
-
 
 function loadReplaceableModel(activeObject) {
   gltfLoader.load(`${activeObject.newModel.url}`, (gltf) => {
@@ -932,7 +925,7 @@ function replaceModelToScene(activeObject) {
   loadReplaceableModel(activeObject); // загружаем новую модель на место старой
   deleteModelFromScene(activeObject.selectedModel);
   console.log(' удаляем модель');
-  resetSelectedModelDispatch();
+  dispatchGlobalResetSelectedModel();
 }
 
 
@@ -957,12 +950,12 @@ function onClick(event) {
           highlightModel(root, null);
           needOutline = true;
           hideTransformControl(control);
-          // selectSurfaceDispatch(eventId);
+          // dispatchGobalSelectSurface(eventId);
         }
       } else if (event.object.userData.type === "WALL") {
         let eventId = intersects[0].object.userData.id;
         let side = Math.floor(event.faceIndex / 2);
-        selectWallDispatch(eventId, side);
+        dispatchGlobalSelectWall(eventId, side);
         const root = intersects[0].object;
         root.userData.click += 1;
         highlightModel(root, null);

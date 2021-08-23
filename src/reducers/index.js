@@ -98,82 +98,86 @@ const initialState = {
         ],
         // стены  
         walls: [
-            // {
-            //     name: "Стена_1",
-            //     type: "WALL",
-            //     id: "100",
-            //     dots: { x: "0", z: "0", x2: "0", z2: "2" },
-            //     width: "0.1",
-            //     height: "1",
-            //     textures: [{
-            //         // боковые часть 
-            //         id: "1",
-            //         width: "0.5",
-            //         height: "0.5",
-            //         url: "обои.jpg",
-            //     },
-            //     {
-            //         // потолок
-            //         id: "2",
-            //         width: "0.2", //длина кирпича
-            //         height: "0.1", // ширина
-            //         url: "kirp.jpg",
-            //     },
-            //     {
-            //         //   индекс 4
-            //         id: "3",
-            //         width: "1",
-            //         height: "1",
-            //         url: "обои.jpg",
-            //     },
-            //     {
-            //         // внутренная часть индекс 5
-            //         id: "1",
-            //         width: "0.5",
-            //         height: "0.5",
-            //         url: "камень2.jpg",
-            //     },
-            //     ],
-            // },
-            // {
-            //     name: "Стена_2",
-            //     id: "101",
-            //     type: "WALL",
-            //     dots: { x: "0", z: "2", x2: "3", z2: "2" },
-            //     width: "0.1",
-            //     height: "1",
-            //     textures: [
-            //         {
-            //             // фронтальная часть
-            //             id: "1",
-            //             width: "0.5",
-            //             height: "0.5",
-            //             url: "50.jpg",
-            //         },
-            //         {
-            //             // потолок
-            //             id: "2",
-            //             width: "0.2", //длина кирпича
-            //             height: "0.1", // ширина
-            //             url: "kirp.jpg",
-            //         },
-            //         {
-            //             //  боковые
-            //             id: "3",
-            //             width: "0.5",
-            //             url: "50.jpg",
-            //             height: "0.5",
-            //         },
-            //         {
-            //             // внутренная часть
-            //             id: "1",
-            //             width: "0.5",
-            //             height: "0.5",
-            //             url: "50.jpg",
-            //             // url: "Inkedplitka-long_LI.jpg",
-            //         },
-            //     ],
-            // },
+            {
+                name: "Стена_1",
+                type: "WALL",
+                id: "100",
+                dots: { x: "0", z: "0", x2: "0", z2: "2" },
+                width: "0.1",
+                height: "1",
+                textures: [{
+                    // торец
+                    id: "1",
+                    width: "0.5",
+                    height: "0.5",
+                    url: "обои.jpg",
+                },
+                {
+                    // потолок
+                    id: "2",
+                    width: "0.2", //длина кирпича
+                    height: "0.1", // ширина
+                    url: "kirp.jpg",
+                },
+                {
+                    // внешний   индекс 4
+                    name: "обои зеленые",
+                    id: "3",
+                    width: "1",
+                    height: "1",
+                    url: "обои.jpg",
+                },
+                {
+                    // внутренная часть индекс 5
+                    name: "камень серый",
+                    id: "1",
+                    width: "0.5",
+                    height: "0.5",
+                    url: "камень2.jpg",
+                },
+                ],
+            },
+            {
+                name: "Стена_2",
+                id: "101",
+                type: "WALL",
+                dots: { x: "0", z: "2", x2: "3", z2: "2" },
+                width: "0.1",
+                height: "1",
+                textures: [
+                    {
+                        // фронтальная часть
+                        id: "1",
+                        width: "0.5",
+                        height: "0.5",
+                        url: "50.jpg",
+                    },
+                    {
+                        // потолок
+                        id: "2",
+                        width: "0.2", //длина кирпича
+                        height: "0.1", // ширина
+                        url: "kirp.jpg",
+                    },
+                    {
+                      // внешняя ?
+                        id: "3",
+                        width: "0.2", //длина кирпича
+                        height: "0.1", // ширина
+                        url: "kirp.jpg",
+                        name: "кирпич",
+                    },
+                    {
+                        // внутренная ?
+                        name: "бежевая плитка ",
+                        id: "1",
+                        width: "0.5",
+                        height: "0.5",
+                        url: "50.jpg",
+                        // url: "Inkedplitka-long_LI.jpg",
+                    },
+                ],
+            },
         ],
         // пол
         floorCeiling: [
@@ -562,10 +566,12 @@ const resetSelectedModel = (state) => {
         activeObject: {
             ...activeObject,
             deleting: {},
-            wall: '',
+            wall: {},
             surface: {},
             newModel: {},
+            newTexture: {},
             typeOfChange: '',
+            selectedModel: {},
             isSave: false
         },
         modalForConfirm: {
@@ -605,15 +611,15 @@ const selectWall = (state, id, sideIndex) => {
 
         return {
             ...state,
-            activeObject: { ...activeObject, selectedModel: {}, wall: { ...activeWall, sideInd: sideIndex } },
-            activeInList: { ...activeInList, selectedModel: {} }
+            activeObject: { ...activeObject, surface: {}, selectedModel: {}, wall: { ...activeWall, sideInd: sideIndex } },
+            activeInList: { ...activeInList, selectedModel: {}, surface: {} }
         };
 
     } else {
         return {
             ...state,
-            activeObject: { ...activeObject, wall: {}, selectedModel: {} },
-            activeInList: { ...activeInList, selectedModel: {}, wall: {}, }
+            activeObject: { ...activeObject, wall: {}, surface: {}, selectedModel: {} },
+            activeInList: { ...activeInList, selectedModel: {}, surface: {}, wall: {}, }
         };
     }
 };
@@ -661,9 +667,9 @@ const getWall = (obj, state, index) => {
 
     const newWall = project_1.walls[index];
     if (obj.wall.sideInd === 4) {
-        newWall.textures[3] = obj.newTexture
+        newWall.textures[2] = obj.newTexture
     } else if (obj.wall.sideInd === 5) {
-        newWall.textures[4] = obj.newTexture
+        newWall.textures[3] = obj.newTexture
     }
     return newWall;
 }

@@ -1,18 +1,18 @@
-export const changePositionModel = (model) => {
+export const dispatchChangePositionModel = (model) => {
   return {
     type: "CHANGE_POSITION_MODEL",
     payload: model,
   };
 };
 
-export const selectModel = (model, from) => {
+export const dispatchSelectModel = (model, from) => {
   return {
     type: "SELECT_MODEL",
     payload: model,
     from: from
   };
 };
-export const resetSelectedModel = (model) => {
+export const dispatchResetSelectedModel = (model) => {
   return {
     type: "RESET_SELECTED_MODEL",
     payload: model,
@@ -25,7 +25,7 @@ export const selectReplaceBy = (model) => {
   };
 };
 
-export const selectTypeOfChange = (typeStatus, el) => {
+export const dispatchSelectTypeOfChange = (typeStatus, el) => {
   return {
     type: "SELECT_TYPE_OF_CHANGE",
     payload: typeStatus,
@@ -38,7 +38,7 @@ export const replaceModel = () => {
   };
 };
 
-export const changeVisibilityModel = (model) => {
+export const dispatchChangeVisibilityModel = (model) => {
   return {
     type: "CHANGE_VISIBILITY_MODEL",
     payload: model
@@ -58,7 +58,7 @@ export const changeStatusCamera = (status) => {
     payload: status
   };
 };
-export const selectWall = (wall, sideIndex) => {
+export const dispatchSelectWall = (wall, sideIndex) => {
   return {
     type: "SELECT_WALL",
     payload: wall,
@@ -71,7 +71,7 @@ export const selectTexture = (id) => {
     payload: id
   };
 };
-export const selectSurface = (id) => {
+export const dispatchSelectSurface = (id) => {
   return {
     type: "SELECT_SURFACE",
     payload: id
@@ -89,13 +89,13 @@ export const saveChanges = () => {
     type: "SAVE_CHANGES"
   };
 };
-export const selectActionModel = (payload) => {
+export const dispatchSelectActionModel = (payload) => {
   return {
     type: "SELECT_ACTION_MODEL",
     payload: payload
   };
 };
-export const resetNewModel = (payload) => {
+export const dispatchResetNewModel = (payload) => {
   return {
     type: "RESET_NEW_MODEL",
     payload: payload
@@ -103,12 +103,12 @@ export const resetNewModel = (payload) => {
 };
 
 
-export const deleteModel = (payload) => {
-  return {
-    type: "DELETE_MODEL",
-    payload: payload
-  };
-};
+// export const deleteModel = (payload) => {
+//   return {
+//     type: "DELETE_MODEL",
+//     payload: payload
+//   };
+// };
 
 export const confirmModal = (payload) => {
   return {
@@ -116,13 +116,13 @@ export const confirmModal = (payload) => {
     payload: payload
   };
 };
-export const lockModel = (payload) => {
+export const dispatchLocModel = (payload) => {
   return {
     type: "LOCK_MODEL",
     payload: payload
   };
 };
-export const resetLockModel = () => {
+export const dispatchResetLockModel = () => {
   return {
     type: "RESET_LOCK_MODEL",
   };

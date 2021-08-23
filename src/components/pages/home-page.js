@@ -19,11 +19,11 @@ import { bindActionCreators } from "redux";
 import * as actions from "../../actions";
 
 const HomePage = ({
-  selectTypeOfChange,
+  dispatchSelectTypeOfChange,
   changeStatusCamera,
   activeObject,
   camera, 
-  selectActionModel
+  dispatchSelectActionModel
 }) => {
   return (
     <div>
@@ -61,7 +61,7 @@ const HomePage = ({
                   ? "controls-btn hand controls-btn__active"
                   : "controls-btn hand"
               }
-              onClick={() => selectActionModel("drag")}
+              onClick={() => dispatchSelectActionModel("drag")}
             >
               <img src={hand} alt="Logo" />
             </div>{" "}
@@ -71,32 +71,32 @@ const HomePage = ({
                   ? "controls-btn controls-btn__active"
                   : "controls-btn"
               }
-              onClick={() => selectActionModel("rotate")}
+              onClick={() => dispatchSelectActionModel("rotate")}
             >
               {" "}
               <img src={rotate} alt="Logo" />
             </div>{" "}
             <div
               className="controls-btn"
-              // onClick={() => selectTypeOfChange("cancel")}
+              // onClick={() => dispatchSelectTypeOfChange("cancel")}
             >
               <img src={rotate2} alt="Logo" />
             </div>{" "}
             {/* <div
               className="controls-btn"
-              onClick={() => selectTypeOfChange("replace")}
+              onClick={() => dispatchSelectTypeOfChange("replace")}
             >
               <img src={change} alt="Logo" />
             </div>{" "} */}
             {/* <div
               className="controls-btn"
-              onClick={() => selectTypeOfChange("change_texture")}
+              onClick={() => dispatchSelectTypeOfChange("change_texture")}
             >
               <img src={textureImg} alt="Logo" />
             </div> */}
             <div
               className="controls-btn"
-              onClick={() => selectTypeOfChange("add_model")}
+              onClick={() => dispatchSelectTypeOfChange("add_model")}
             >
               <img src={addImg} alt="Logo" />
             </div>
