@@ -1,13 +1,13 @@
 import React, { Component, useState } from "react";
 import { connect } from "react-redux";
 import { compose } from "../../utils";
-import {
-    selectReplaceBy, addModel,
-} from "../../actions";
+
+import { bindActionCreators } from "redux";
+import * as actions from "../../actions";
 import "./model-list.css";
 
 
-const ModelList = ({ modelList, selectReplaceBy, status, addModel }) => {
+const ModelList = ({ modelList, furnishingsWallList, selectReplaceBy, status, addModel, dispatchAddFurnishings }) => {
 
     const [select, setSelect] = useState(null);
     const handlerClick = (el, func) => {
@@ -42,44 +42,38 @@ const ModelList = ({ modelList, selectReplaceBy, status, addModel }) => {
                 </ul>
             </div>
         )
-    }
-
-}
-class ModelListContainer extends Component {
-    render() {
-        const {
-            modelList,
-            selectReplaceBy,
-            addModel,
-            status
-        } = this.props;
-
+    } else if (status === 'add_furnishings_wall') {
         return (
-            <div>
-                <ModelList
-                    status={status}
-                    modelList={modelList}
-                    selectReplaceBy={selectReplaceBy}
-                    addModel={addModel}
-                />
+            <div className="texture-block">
+                <ul>
+                    {furnishingsWallList.map((el, ind) => (
+
+                        <li key={ind}
+                            className={el.id === select ? 'active' : ''}
+                            onClick={() => { handlerClick(el, dispatchAddFurnishings) }}
+                        >{el.name}</li>
+                    ))}
+                </ul>
             </div>
-        );
+        )
     }
+
 }
 
+const mapStateToProps = (state) => {
+    const { modelList, furnishingsWallList } = state.main;
+    return {
+        modelList,
+        furnishingsWallList
+    };
+};
+function mapDispatchToProps(dispatch) {
+    return bindActionCreators({
+        ...actions,
+    }, dispatch);
+}
 
-const mapStateToProps = ({ modelList }) => {
-    return {
-        modelList
-    };
-};
-const mapDispatchToProps = (dispatch) => {
-    return {
-        selectReplaceBy: (id) => dispatch(selectReplaceBy(id)),
-        addModel: (id) => dispatch(addModel(id))
-    };
-};
 
 export default compose(connect(mapStateToProps, mapDispatchToProps))(
-    ModelListContainer
+    ModelList
 );

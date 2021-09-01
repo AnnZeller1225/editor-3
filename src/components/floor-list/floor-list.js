@@ -8,6 +8,9 @@ import lockImg from "../../img/icons/lock.png";
 import unlockImg from "../../img/icons/unlock.png";
 import editImg from "../../img/icons/edit.png";
 import basketImg from "../../img/icons/basket.png";
+import pictureImg from "../../img/icons/pict.png";
+import addImg from '../../img/icons/add.png';
+
 import { bindActionCreators } from "redux";
 import * as actions from "../../actions";
 import "./floor-list.css";
@@ -17,7 +20,8 @@ const FloorList = ({
   dispatchSelectModel,
   dispatchChangeVisibilityModel,
   dispatchLocModel, activeInList,
-  activeObject, selectedInModelList, dispatchSelectTypeOfChange, dispatchSelectSurface, dispatchSelectWall
+  activeObject, selectedInModelList, dispatchSelectTypeOfChange, dispatchSelectSurface, dispatchSelectWall,
+  dispatchSelectActionModel
 }) => {
   // по скользку есть ошибка с позиционированием всего блока стен, индексы берутся примерные - при перерасчетах будем переделывать ( не соблюден угол поворота стен, ошибка в 45градусов)
 
@@ -25,15 +29,14 @@ const FloorList = ({
   const outsideWallInd = 5;  // внешняя сторона
 
 
-  let activeModelId = activeInList.selectedModel.id ? activeInList.selectedModel.id : activeObject.selectedModel.id;
+  let activeModelId = activeInList.selectedModel.id || activeObject.selectedModel.id;
   // let activeModel2 = activeObject.selectedModel.id;
 
-  let activeFloorId = activeInList.surface.id ? activeInList.surface.id : activeObject.surface.id;
+  let activeFloorId = activeInList.surface.id|| activeObject.surface.id;
 
-  let activeWallId = activeObject.wall.id ? activeObject.wall.id : activeInList.wall.id;
-  let indexWall = activeObject.wall.id ? activeObject.wall.sideInd : activeInList.wall.sideInd
-  const { surfaces, walls } = project_1;
-  const { floorCeiling } = project_1;
+  let activeWallId = activeObject.wall.id || activeInList.wall.id;
+  let indexWall = activeObject.wall.id || activeInList.wall.sideInd
+  const { surfaces, walls, floorCeiling, furnishingsWall } = project_1;
 
   const handlerCLickModel = (el) => {
     if (el.id !== activeModelId) {
@@ -65,6 +68,18 @@ const FloorList = ({
 
 
   }
+
+  const handlerCLickFurnishings = (el) => {
+    // if (el.id !== activeModelId) {
+    //   dispatchSelectModel(el, 'from-list');
+    //   dispatchSelectTypeOfChange('replace')
+
+    // } else {
+    //   dispatchSelectTypeOfChange('replace')
+    // }
+  }
+
+
   return (
     <div className="floor-list-wrap">
       <div className="floor-w">
@@ -115,9 +130,55 @@ const FloorList = ({
             ))}
           </div>
         </div>
-        {/* СТЕНЫ И ПОЛ */}
+        {/* картины  */}
         <div className="block">
-          <span className="block-title">Комната</span>
+          <div className="block-title">
+            <span>Комната
+            </span>
+            <div className="picture"
+              onClick={() => dispatchSelectTypeOfChange('add_furnishings_wall')
+              }
+            
+            >
+
+              <img src={pictureImg} alt="" />
+            </div>
+            {/* <div className="picture">
+
+              <img src={addImg} alt="" />
+            </div> */}
+            </div>
+
+          <span>предметы интерьера </span>
+          <div className="list">
+            {furnishingsWall.map((el, index) => (
+
+              <div className="list-item-w" key={index}>
+                <div
+                  className={el.id === activeFloorId ? "list-item active" : "list-item"}
+                  id={el.id}
+                  // onClick={() => selectedInModelList(el)}
+                >
+                  {el.name}
+
+
+                  <div className="list-item-wrap-img">
+                    <div
+                      className="list-item-img"
+                      onClick={() => handlerCLickFurnishings(el)}
+                    >
+                      <img src={editImg} alt="Logo" />
+                    </div>
+                  </div>
+                </div>
+               
+              </div>   ))}
+
+      
+          </div>
+
+          {/* СТЕНЫ И ПОЛ */}
+
           <div className="list">
             {walls.map((el, index) => (
 
@@ -128,8 +189,8 @@ const FloorList = ({
                   className={el.id === activeWallId && indexWall === insideWallInd ? "list-item active-t2" : "list-item"}
                 >
                   <span onClick={() => handlerCLickSurface(el, insideWallInd)}>
-                  {el.textures[2].name}
-                </span>
+                    {el.textures[2].name}
+                  </span>
                   <div
                     className="list-item-img"
                     onClick={() => handlerCLickSurface(el, insideWallInd)}
@@ -140,12 +201,12 @@ const FloorList = ({
                 <div
                   className={el.id === activeWallId && indexWall === outsideWallInd ? "list-item active-t2" : "list-item"}
 
-                  // onClick={() => handlerCLickSurface(el, outsideWallInd)}
+                // onClick={() => handlerCLickSurface(el, outsideWallInd)}
 
                 >
                   <span onClick={() => handlerCLickSurface(el, outsideWallInd)}>
                     {el.textures[3].name}
-                    </span>
+                  </span>
                   {/* {el.textures[3].name} */}
 
                   <div
@@ -155,21 +216,7 @@ const FloorList = ({
                     <img src={editImg} alt="Logo" />
                   </div>
                 </div>
-                {/* {el.name}
-                  <div className="list-item__sub">
-                    {el.textures[2].name}
-                    </div>
-                  <div className="list-item__sub">
-                    {el.textures[3].name}</div> */}
-
-                {/* <div className="list-item-wrap-img">
-                  <div
-                    className="list-item-img"
-                    onClick={() => handlerCLickSurface(el)}
-                  >
-                    <img src={editImg} alt="Logo" />
-                  </div>
-                </div> */}
+               
               </div>
             ))}
 
@@ -182,15 +229,16 @@ const FloorList = ({
                   onClick={() => selectedInModelList(el)}
                 >
                   {el.name}
-                </div>
-                <div className="list-item-wrap-img">
-                  <div
-                    className="list-item-img"
-                    onClick={() => handlerCLickSurface(el)}
-                  >
-                    <img src={editImg} alt="Logo" />
+                  <div className="list-item-wrap-img">
+                    <div
+                      className="list-item-img"
+                      onClick={() => handlerCLickSurface(el)}
+                    >
+                      <img src={editImg} alt="Logo" />
+                    </div>
                   </div>
                 </div>
+              
               </div>
             ))}
 
@@ -202,7 +250,8 @@ const FloorList = ({
   );
 };
 
-const mapStateToProps = ({ project_1, changingModels, currentWall, textureList, activeObject, activeInList }) => {
+const mapStateToProps = (state) => {
+  const {project_1, changingModels, currentWall, textureList, activeObject, activeInList} = state.main
   return {
     project_1, activeInList,
     changingModels,

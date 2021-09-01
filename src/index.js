@@ -8,8 +8,8 @@ import ErrorBoundry from './components/error-boundry';
 ReactDOM.render(
   <Provider store={store}>
     <ErrorBoundry>
-        <HashRouter>
 
+        <HashRouter>
           <App />
         </HashRouter>
     </ErrorBoundry>

@@ -101,14 +101,13 @@ export const dispatchResetNewModel = (payload) => {
     payload: payload
   };
 };
-
-
-// export const deleteModel = (payload) => {
-//   return {
-//     type: "DELETE_MODEL",
-//     payload: payload
-//   };
-// };
+// возможно она лишняя и можно упростить - уже есть addModel в навигации
+export const dispatchAddFurnishings = (payload) => {
+  return {
+    type: "ADD_FURNISHINGS",
+    payload: payload
+  };
+};
 
 export const confirmModal = (payload) => {
   return {
@@ -141,3 +140,16 @@ export const resetTC = (payload) => {
     payload: payload,
   };
 };
+export const dispatchPercentLoad = (payload) => {
+  return {
+    type: "PERCENT_LOAD",
+    payload: payload,
+  };
+};
+export const dispatchPercentReset = (payload) => {
+  return {
+    type: "PERCENT_RESET",
+    payload: payload,
+  };
+};
+

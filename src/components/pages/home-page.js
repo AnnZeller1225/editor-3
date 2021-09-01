@@ -1,7 +1,7 @@
 import React from "react";
 import { connect } from "react-redux";
 import { compose } from "../../utils";
-
+import LoadBar from "../load-bar"
 import "./home-page.css";
 import hand from "../../img/icons/drag.png";
 import rotate from "../../img/icons/rotate.png";
@@ -14,11 +14,10 @@ import textureImg from "../../img/icons/texture.png";
 import arrowImg from "../../img/icons/arrow.png";
 import FloorList from "../floor-list";
 import Modal from "../modal-window";
-
 import { bindActionCreators } from "redux";
 import * as actions from "../../actions";
 
-const HomePage = ({
+const HomePage = ({ 
   dispatchSelectTypeOfChange,
   changeStatusCamera,
   activeObject,
@@ -26,9 +25,15 @@ const HomePage = ({
   dispatchSelectActionModel
 }) => {
   return (
+  
     <div>
-      <Modal />
+ cvcv
+  
+   <Modal />
       <Navigation />
+
+      <LoadBar />
+
       <div className="main">
         <div className="instrum">
           <div className="controls">
@@ -78,22 +83,10 @@ const HomePage = ({
             </div>{" "}
             <div
               className="controls-btn"
-              // onClick={() => dispatchSelectTypeOfChange("cancel")}
             >
               <img src={rotate2} alt="Logo" />
             </div>{" "}
-            {/* <div
-              className="controls-btn"
-              onClick={() => dispatchSelectTypeOfChange("replace")}
-            >
-              <img src={change} alt="Logo" />
-            </div>{" "} */}
-            {/* <div
-              className="controls-btn"
-              onClick={() => dispatchSelectTypeOfChange("change_texture")}
-            >
-              <img src={textureImg} alt="Logo" />
-            </div> */}
+           
             <div
               className="controls-btn"
               onClick={() => dispatchSelectTypeOfChange("add_model")}
@@ -107,16 +100,16 @@ const HomePage = ({
 
         </div>
       </div>{" "}
-      <FloorList />
+      <FloorList /> 
     </div>
   );
 };
 
 
-const mapStateToProps = ({ activeObject, camera }) => {
+const mapStateToProps = (state) => {
   return {
-    activeObject,
-    camera,
+    activeObject : state.main.activeObject,
+    camera: state.main.camera
   };
 };
 function mapDispatchToProps(dispatch) {

@@ -1,11 +1,31 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { RectAreaLightHelper } from "three/examples/jsm/helpers/RectAreaLightHelper.js";
+
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
+
 import {  composer, effectFXAA } from "../scripts/outline"
-const loader = new THREE.TextureLoader();
+const gltfLoader = new GLTFLoader();
+const fbxLoader = new FBXLoader();
+
+
+// const loader = new THREE.TextureLoader();
 
 function initScene(scene) {
     scene.background = new THREE.Color(0x657d83);
+}
+const getTypeLoader = (url) => {
+
+
+    let type = url.match(/\.[0-9a-z]{1,5}$/);
+
+    switch (type[0]) {
+        case ".fbx":
+            return fbxLoader;
+        case ".glb":
+            return gltfLoader;
+        default: return gltfLoader;
+    }
 }
 
 
@@ -173,8 +193,8 @@ function drawBox(
 function combinePartsOfModel(el, scene) {
     var group, mesh, box;
     group = new THREE.Group();
-    var loader = new GLTFLoader();
-    loader.load(`${el.url}`, (gltf) => {
+    var gltfLoader = new GLTFLoader();
+    gltfLoader.load(`${el.url}`, (gltf) => {
         mesh = gltf.scene;
         var gltfbox = new THREE.Box3().setFromObject(mesh);
         const width = new THREE.Vector3();
@@ -263,7 +283,7 @@ function calculateParamTexture(widthImg, widthPixel, heightPixel, isRotate) {
 }
 // загрузка и вычисление текстуры только для сложной формы пола
 function getSharpTexture(texture) {
-    let loadTexture = loader.load(`${texture.url}`, (tex) => {
+    let loadTexture = new THREE.TextureLoader().load(`${texture.url}`, (tex) => {
         loadTexture.wrapS = loadTexture.wrapT = THREE.RepeatWrapping;
         if (+tex.image.height > +tex.image.width) {
             let height = calculateParamTexture(+texture.width, +tex.image.height, +tex.image.width,
@@ -385,6 +405,7 @@ export {
     changeTextureWall, getChangeTextureFloor,
     removeAllHightLight, 
     onWindowResize,
-    addSurfaces
+    addSurfaces,
+    getTypeLoader
 
 };

@@ -12,8 +12,8 @@ const Navigation = ({ activeObject}) => {
 };
 
 
-const mapStateToProps = ({ activeObject }) => {
-  return { activeObject };
+const mapStateToProps = (state) => {
+  return { activeObject: state.main.activeObject };
 };
 
 

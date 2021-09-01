@@ -3,11 +3,11 @@ import "./styles.css";
 import React from "react";
 import { connect } from "react-redux";
 import { compose } from "../../utils";
-import { resetModal, saveChanges } from "../../actions";
 import TextureList from "../texture-list/texture-list";
 import ModelList from "../model-list/model-list";
 import ModalForConfirm from "../modal-confirm";
-
+import { bindActionCreators } from "redux";
+import * as actions from "../../actions";
 const ModalWindow = ({
   modal,
   resetModal,
@@ -21,7 +21,10 @@ const ModalWindow = ({
     text = "добавить элемент";
   } else if (modal.typeOfChange === "change_texture") {
     text = "изменить текстуру";
-  } else {
+  } 
+  else if (modal.typeOfChange === "add_furnishings_wall") {
+    text = "добавить предмет интерьера на стену";
+  }else {
     text = "другое действие";
   }
 
@@ -36,6 +39,10 @@ const ModalWindow = ({
           {modal.typeOfChange === "change_texture" ? <TextureList /> : null}
           {modal.typeOfChange === "replace" ? <ModelList status={modal.typeOfChange} /> : null}
           {modal.typeOfChange === "add_model" ? <ModelList status={modal.typeOfChange} /> : null}
+
+          {modal.typeOfChange === "add_furnishings_wall" ? <ModelList status={modal.typeOfChange} /> : null}
+
+
           <div className="btn-w">
             <button className="modal-btn" onClick={() => saveChanges()}>
               Сохранить изменения
@@ -53,19 +60,16 @@ const ModalWindow = ({
 };
 
 
-const mapStateToProps = ({ modal,
-}) => {
+const mapStateToProps = (state) => {
   return {
-    modal,
+    modal: state.main.modal
   };
 };
-const mapDispatchToProps = (dispatch) => {
-  return {
-    resetModal: () => dispatch(resetModal()),
-    saveChanges: () => dispatch(saveChanges())
-  };
-};
-
+function mapDispatchToProps(dispatch) {
+  return bindActionCreators({
+    ...actions,
+  }, dispatch);
+}
 export default compose(connect(mapStateToProps, mapDispatchToProps))(
   ModalWindow
 );

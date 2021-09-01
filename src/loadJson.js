@@ -1,4 +1,6 @@
-import * as THREE from "three";
+
+// код с json который будет приходить + функции построения комнаты с дырками 
+
 const initialState = {
   rooms: {
     bedroom: [

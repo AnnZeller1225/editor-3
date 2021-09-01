@@ -1,8 +1,11 @@
 import React, { useRef, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { compose } from "../../utils";
+
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls";
 import { InteractionManager } from "three.interactive";
 import Wall from "../wall";
@@ -21,7 +24,8 @@ import {
   changeVisibility, changeTextureWall,
   getChangeTextureFloor, removeAllHightLight,
   onWindowResize,
-  addSurfaces
+  addSurfaces,
+  getTypeLoader
 } from "../scripts/initBasicScene.js";
 import {
   initCamera,
@@ -29,7 +33,46 @@ import {
 } from "../scripts/camera.js";
 import { initOutlineComposer, composer, outlinePass } from "../scripts/outline"
 
-let scene,
+// getTypeLoader();
+const scene = new THREE.Scene();
+
+const manager = new THREE.LoadingManager();
+
+function countPercent(loaded, all) {
+  let res  = loaded / all * 100;
+  console.log(res, 'res');
+ dispatchGlobalPercentLoad(res)
+}
+
+manager.onStart = function (url, itemsLoaded, itemsTotal) {
+
+  // console.log(itemsLoaded + ' of ' + itemsTotal);
+
+};
+
+manager.onLoad = function () {
+
+  // console.log('Loading complete!');
+
+};
+
+
+manager.onProgress = function (url, itemsLoaded, itemsTotal) {
+
+
+  countPercent(itemsLoaded, itemsTotal )
+  // console.log('Loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.');
+
+};
+
+manager.onError = function (url) {
+
+  console.log('There was an error loading ' + url);
+
+};
+
+// навести порядок для переменный обновления 
+let
   cameraPersp,
   renderer,
   checkCollisionModels,
@@ -37,6 +80,7 @@ let scene,
   gltfLoader,
   updateUseEffectReplace,
   updateForAddModel,
+  updateForAddFurnishingWall,
   updateUseEffectForDrag,
   updateUseEffectForRotate,
   updateUseEffectCameraPanorama,
@@ -56,12 +100,17 @@ let scene,
   wallList,
   selectedObjects,
   transformControledModel,
-  mouse, cameraStatus;
+  mouse, cameraStatus, fbxLoader, objLoader, percent; // mouse2 исправить
+
 initGlobalLets();
 initUseEffects();
 // список useEffect
-let dispatchGlobalSelectWall, dispatchGobalSelectSurface, dispatchGlobalResetSelectedModel, dispatchGlobalChangePositionModel, dispatchGlobalSelectModel;
+let dispatchGlobalSelectWall, dispatchGobalSelectSurface, dispatchGlobalResetSelectedModel, dispatchGlobalChangePositionModel, dispatchGlobalSelectModel, dispatchGlobalPercentLoad;
+
 const canvas = renderer.domElement;
+// кастомный код 
+
+let checkCollisionWalls = []; // пересечение со стенами 
 
 let clickManager = new InteractionManager(
   renderer,
@@ -74,11 +123,11 @@ let prevChangeVisible = {
   action: ''
 }
 let ref;
+// wallList переименовать - хз что на данный момент
 // текстура стен не высчитывается height 
 // добавлять новю генераци. id для новой моддели 
 // перенести проверку на обновления к самим useeffecct 
-// как насчет названий диспатчеров - dispatchSelectModel, a если мне нужно глобаное имя - dispatchGlobalSelectModel ? -   ПЕРЕПИСАТЬ 
-// что если на каждый клик делать сравнение пред модели и следующей, так можно отследивать и снятие выделение при клике на модельи стрелке одновренменно 
+
 
 // addTransformControl упростить, дублируется при каждом клике 
 // resetSelectedModel переименовать в resetSelectedActive - сброс стен и пола тоже
@@ -95,6 +144,7 @@ const FloorPlane = ({
   dispatchSelectSurface,
   dispatchResetNewModel,
   dispatchResetSelectedModel,
+  dispatchPercentLoad,
   activeObject,
   modalForConfirm,
   dispatchResetLockModel, activeInList,
@@ -105,6 +155,7 @@ const FloorPlane = ({
   const [replaceModel, setReplaceModel] = useState(null);
   const [visibleModel, setVisibleModel] = useState(null);
   const [addModel, setAddModel] = useState(null);
+  const [addFurnishingsWall , setAddFurnishingsWall] = useState(null);
   const [moveModel, setMoveModel] = useState(null);
   const [rotateModel, setRotateModel] = useState(null);
   const [cameraPanorama, setCameraPanorama] = useState(null);
@@ -119,6 +170,9 @@ const FloorPlane = ({
   updateDispatches(); // локальные диспатчеры в глобальные
   checkUpdateForReplace();
   checkUpdateForAddModel();
+
+  checkUpdateForAddFurnishingWall();
+
   checkUpdateForCameraPanorama();
   checkUpdateForCameraDef();
   checkUpdateTexture__wall();
@@ -131,6 +185,24 @@ const FloorPlane = ({
   checkUpdateForVisibility();
 
   checkUpdateClickListModel();
+  const { furnishingsWall } = project_1;
+
+
+
+  const loadFurnishingsWall = (arr) => {
+    arr.forEach(el => {
+      load(el)
+    });
+   
+  }
+
+  // 3d-model.fbx  ./models/frame_fbx.fbx  Modern picture OBJ.obj
+  let url = './models/3d-model4.fbx'
+
+  // loadObj('./models/Modern picture OBJ.obj')
+  // loadFBX(url)
+
+
 
   // отрисовывает сцену и свет, 
   // добавление стен, пола и моделей
@@ -139,7 +211,11 @@ const FloorPlane = ({
     main();
     addWalls(project_1.walls);
     addSurfaces(project_1.floorCeiling, wallList, scene);
-    addFurniture(project_1.surfaces)
+    addFurniture(project_1.surfaces);
+
+    // нельзя переносить загрузку моделей в другой файл
+    loadFurnishingsWall(furnishingsWall)
+    // test()
   }, []);// eslint-disable-line react-hooks/exhaustive-deps
 
 
@@ -188,6 +264,28 @@ const FloorPlane = ({
       updateForAddModel = true;
     }
   }
+
+
+  // если добавляем плоские предметы 
+  useEffect(() => {
+    if (activeObject.newFurnishings.id && activeObject.isSave && updateForAddFurnishingWall) {
+      // loadModel(activeObject.newModel);
+      loadNewFurniships(activeObject.newFurnishings  )
+      updateForAddFurnishingWall = false;
+      dispatchResetNewModel(); // после загрузки модели сбрасываем выбранну. модели в модалке
+      console.log(' фурнитура');
+    }
+
+  }, [addFurnishingsWall]);  // eslint-disable-line react-hooks/exhaustive-deps
+  function checkUpdateForAddFurnishingWall() {
+    if (activeObject.newFurnishings.id && updateForAddFurnishingWall === false && activeObject.isSave && activeObject.typeOfChange === 'add_furnishings_wall') {
+      setAddFurnishingsWall(addFurnishingsWall + 1);
+      updateForAddFurnishingWall = true;
+    }
+  }
+
+
+
   // режим камеры - панорама
   useEffect(() => {
     if (camera.status === "panorama") {
@@ -457,6 +555,7 @@ const FloorPlane = ({
     dispatchGlobalChangePositionModel = dispatchChangePositionModel;
     dispatchGlobalSelectModel = dispatchSelectModel;
     dispatchGlobalResetSelectedModel = dispatchResetSelectedModel;
+    dispatchGlobalPercentLoad = dispatchPercentLoad
   }
 
 
@@ -509,7 +608,6 @@ const FloorPlane = ({
     if (camera.status === "default" && updateUseEffectCameraDefault === false) {
       setCameraDefault(cameraDefault + 1);
       updateUseEffectCameraDefault = true;
-      // console.log(' меняем ');
     }
   }
 
@@ -527,34 +625,29 @@ const FloorPlane = ({
     }
   }
 
-
-
   return (
+ 
     <>
+   
       <div className="canvas" ref={ref} />
-      {
-        // console.count()
-      }
+   
     </>
   );
 };
 
-// function getTypeOfObject(obj){
-//   return type, id
-// }
+const mapStateToProps = (state) => {
 
-const mapStateToProps = ({
-  project_1,
-  changingModels,
-  currentModel,
-  addedModel,
-  camera,
-  modal,
-  activeObject,
-  modalForConfirm,
-  activeInList,
-  resetTransformControl
-}) => {
+  const { project_1,
+    changingModels,
+    currentModel,
+    addedModel,
+    camera,
+    modal,
+    activeObject,
+    modalForConfirm, activeInList,
+    resetTransformControl} = state.main
+
+  
   return {
     project_1,
     changingModels,
@@ -594,6 +687,7 @@ function addWalls(arr) {
     };
     addedWall.material.side = THREE.DoubleSide;
     wallList.push(addedWall);
+    checkCollisionWalls.push(addedWall);
 
     scene.add(addedWall);
   });
@@ -606,7 +700,10 @@ function addFurniture(arr) {
   });
 }
 
+
+
 function loadModel(modelJson) {
+
   gltfLoader.load(`${modelJson.url}`, (gltf) => {
     let root = gltf.scene;
     const { x, y, z } = modelJson.dots;
@@ -626,8 +723,8 @@ function loadModel(modelJson) {
       wallList.push(root);
       outlinedArr.push(root);
     }
-
-  });
+  }
+  );
 }
 
 
@@ -642,8 +739,8 @@ function addHightLight(root, status) {
   if (root?.visible && root.parent && cameraStatus !== 'panorama' && !control.userData.active) {
     root.userData.click += 1;
     highlightModel(root, status);
-// если это модель,  не заблочена и если ей нужны стрелки 
-    if (needArrow && !root.userData.locked && (root.userData.type !== "WALL" || root.userData.type !== "FLOOR_SHAPE" )) {
+    // если это модель,  не заблочена и если ей нужны стрелки 
+    if (needArrow && !root.userData.locked && (root.userData.type !== "WALL" || root.userData.type !== "FLOOR_SHAPE")) {
       transformControledModel = root;
       addTransformControl(root);
     } else {
@@ -653,7 +750,21 @@ function addHightLight(root, status) {
   }
 
 }
+function addHightLight2(root, status) {
+  if (root?.visible && root.parent && cameraStatus !== 'panorama' && !control.userData.active) {
+    root.userData.click += 1;
+    highlightModel(root, status);
+    // если это модель,  не заблочена и если ей нужны стрелки 
+    if (needArrow && !root.userData.locked && (root.userData.type !== "WALL" || root.userData.type !== "FLOOR_SHAPE")) {
+      transformControledModel = root;
+      addTC2(root);
+    } else {
+      // console.log(' скрываем остальные  стрелки');
+      hideTransformControl(control)
+    }
+  }
 
+}
 
 
 function deleteModelFromScene(modelLson) {
@@ -677,6 +788,7 @@ function deleteModelFromScene(modelLson) {
 function initUseEffects() {
   updateUseEffectReplace = false;
   updateForAddModel = false;
+  updateForAddFurnishingWall = false;
   updateUseEffectForDrag = false;
   updateUseEffectForRotate = false;
   updateUseEffectCameraPanorama = false;
@@ -689,7 +801,7 @@ function initUseEffects() {
   updateUseEffectListClick = false;
 }
 function initGlobalLets() {
-  scene = new THREE.Scene();
+
   cameraPersp = new THREE.PerspectiveCamera(
     45,
     window.innerWidth / window.innerHeight,
@@ -702,9 +814,11 @@ function initGlobalLets() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
   checkCollisionModels = []; // массив всех объектов для пересечения
   control = new TransformControls(cameraPersp, renderer.domElement);
-  gltfLoader = new GLTFLoader();
+  gltfLoader = new GLTFLoader(manager);
+  fbxLoader = new FBXLoader();
+  objLoader = new OBJLoader();
   axesHelper = new THREE.AxesHelper(15);
-  scene.add(axesHelper)
+  // scene.add(axesHelper)
 
   movingStatus = null;
   clock = new THREE.Clock();
@@ -796,10 +910,52 @@ function addTransformControl(model) {
   }
 
 }
+// для картин 
+function addTC2(model) {
+console.log(' addTC2');
+  model.userData.currentPosition = new THREE.Vector3();
+  // реагирует на все изменения 
+  control.addEventListener("change", render);
+  control.addEventListener("mouseDown", () => {
+    control.userData.active = true;
+  });
+  // при перетягивании
+  control.addEventListener(
+    "objectChange",
+    function (el) {
+      isCollision(el, checkCollisionModels);
+      el.target.children[0].object.userData.currentPosition.copy(
+        el.target.children[0].object.position
+      );
+    },
+    false
+  );
+  control.addEventListener(
+    "dragging-changed",
+    (event) => cameraControlsEnable(event, cameraControls),
+    false
+  );
+
+  control.addEventListener(
+    "dragging-changed", () => {
+      control.userData.active = false;
+
+    }
+  );
+
+  control.userData.name = "transformControl";
+  control.showX = true;
+  control.showZ = false;
+  control.showY = true;
+
+  scene.add(control);
+  control.attach(model);
+}
 // отправляет данные в стор 
 function sendPosition(event, model) {
 
   model.userData.click = 2; // после переноса чтобы подсветка могла пропасть
+  // console.log(model);
   let { x, y, z } = event.target._plane.object.userData.currentPosition;
   model.userData.dots = event.target._plane.object.userData.currentPosition;
   let modelInfo = {
@@ -850,8 +1006,7 @@ function highlightModel(model) {
         dispatchGlobalSelectModel(model.userData);
       } else if (isSurface(model)) {
         dispatchGobalSelectSurface(model.userData.id)
-      
-        // break
+
       }
       // debugger;
       removeAllHightLight(scene.children, model);
@@ -868,7 +1023,7 @@ function highlightModel(model) {
       if (isModel(model)) {
         dispatchGlobalSelectModel(model.userData);
 
-      } 
+      }
       else if (isSurface(model)) {
         dispatchGobalSelectSurface(model.userData.id)
       }
@@ -928,6 +1083,280 @@ function replaceModelToScene(activeObject) {
   dispatchGlobalResetSelectedModel();
 }
 
+function load(el) {
+  const { url, dots, rotate } = el
+  let type = url.match(/\.[0-9a-z]{1,5}$/);
+  const { x, y, z } = dots;
+
+  switch (type[0]) {
+    case ".fbx":
+      return fbxLoader.load(`${url}`,
+        (model) => {
+          model.scale.set(.01, .01, .01);
+          model.position.set(Number(x), Number(y), Number(z));
+          model.userData = {
+            ...model.userData, ...el,
+            click: 0,
+          };
+          scene.add(model);
+
+          // addTC2(model);
+          if (model.parent && model.visible) {
+            model.addEventListener("mousedown", () => addHightLight2(model));
+            clickManager.add(model);
+            checkCollisionModels.push(model);
+            wallList.push(model);
+            outlinedArr.push(model);
+          }
+        },
+        (xhr) => {
+          // percent = (xhr.loaded / xhr.total) * 100;
+          // console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+        },
+        (error) => {
+          // console.log(error)
+        }
+      );
+    case ".glb":
+      return gltfLoader.load(`${url}`, (gltf) => {
+        let root = gltf.scene;
+
+        root.rotation.y = rotate;
+        root.userData = {
+          ...root.userData, ...el,
+          click: 0,
+        };
+
+        root.position.set(Number(x), Number(y), Number(z));
+        scene.add(root);
+        // выбивало ошибку при удалении моделей, делаем проверку на то, состоит ли в сцене модель
+        if (root.parent && root.visible) {
+          root.addEventListener("mousedown", () => addHightLight(root));
+          clickManager.add(root);
+          checkCollisionModels.push(root);
+          wallList.push(root);
+          outlinedArr.push(root);
+        }
+
+      });
+    case ".obj":
+      return objLoader.load(`${url}`,
+        (model) => {
+          model.scale.set(.01, .01, .01);
+          model.position.set(Number(x), Number(y), Number(z));
+          model.userData = {
+            ...model.userData, ...el,
+            click: 0,
+          };
+          scene.add(model);
+
+          // addTC2(model);
+          // clickManager.add(model);
+          // model.addEventListener('click', () => { addTC2(model) })
+        },
+        (xhr) => {
+          console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+        },
+        (error) => {
+          console.log(error)
+        }
+      )
+    default: return gltfLoader;
+  }
+
+}
+
+function loadNewFurniships(el) {
+  const { url, dots, rotate } = el
+  let type = url.match(/\.[0-9a-z]{1,5}$/);
+  const { x, y, z } = dots;
+
+  switch (type[0]) {
+    case ".fbx":
+      return fbxLoader.load(`${url}`,
+        (model) => {
+          model.scale.set(.01, .01, .01);
+          model.position.set(Number(x), Number(y), Number(z));
+          model.userData = {
+            ...model.userData, ...el,
+            click: 0,
+          };
+          scene.add(model);
+
+          // addTC2(model);
+          if (model.parent && model.visible) {
+            model.addEventListener("mousedown", () => addHightLight2(model));
+            clickManager.add(model);
+            checkCollisionModels.push(model);
+            wallList.push(model);
+            outlinedArr.push(model);
+          }
+        },
+        (xhr) => {
+          percent = (xhr.loaded / xhr.total) * 100;
+          dispatchGlobalPercentLoad(percent);
+          console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+     
+        },
+        (error) => {
+          console.log(' loadNewFurniships не загрузила модель', error)
+        }
+      );
+    case ".glb":
+      return gltfLoader.load(`${url}`, (gltf) => {
+        let root = gltf.scene;
+
+        root.rotation.y = rotate;
+        root.userData = {
+          ...root.userData, ...el,
+          click: 0,
+        };
+
+        root.position.set(Number(x), Number(y), Number(z));
+        scene.add(root);
+        // выбивало ошибку при удалении моделей, делаем проверку на то, состоит ли в сцене модель
+        if (root.parent && root.visible) {
+          root.addEventListener("mousedown", () => addHightLight(root));
+          clickManager.add(root);
+          checkCollisionModels.push(root);
+          wallList.push(root);
+          outlinedArr.push(root);
+        }
+
+      });
+    case ".obj":
+      return objLoader.load(`${url}`,
+        (model) => {
+          model.scale.set(.01, .01, .01);
+          model.position.set(Number(x), Number(y), Number(z));
+          model.userData = {
+            ...model.userData, ...el,
+            click: 0,
+          };
+          scene.add(model);
+
+          // addTC2(model);
+          // clickManager.add(model);
+          // model.addEventListener('click', () => { addTC2(model) })
+        },
+        (xhr) => {
+          console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+        },
+        (error) => {
+          console.log(' loadNewFurniships не загрузила модель', error)
+        }
+      )
+    default: return gltfLoader;
+  }
+
+}
+
+
+
+
+
+
+
+function test() {
+
+  const fbxLoader = new FBXLoader()
+  fbxLoader.load(
+    './models/3d-model2.fbx',
+    (model) => {
+      // object.traverse(function (child) {
+      //     if ((child as THREE.Mesh).isMesh) {
+      //         // (child as THREE.Mesh).material = material
+      //         if ((child as THREE.Mesh).material) {
+      //             ((child as THREE.Mesh).material as THREE.MeshBasicMaterial).transparent = false
+      //         }
+      //     }
+      // })
+      model.scale.set(.01, .01, .01);
+      model.position.set(0, 0.5, -3.5);
+
+
+      // scene.add(model)
+      // addTC2(object);
+      clickManager.add(model);
+      model.addEventListener('click', () => { addTC2(model) })
+    },
+    (xhr) => {
+      console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+    },
+    (error) => {
+      console.log(error)
+    }
+  )
+
+
+}
+function loadFBX(url) {
+  fbxLoader.load(`${url}`,
+    (model) => {
+      model.scale.set(.01, .01, .01);
+      model.position.set(1, 1, 1)
+      // model.position.set(Number(x), Number(y), Number(z));
+      model.userData = {
+        // ...model.userData, ...el,
+        click: 0,
+      };
+      scene.add(model);
+
+      // addTC2(model);
+    },
+    (xhr) => {
+      console.log(' загрузили ')
+    },
+    (error) => {
+      console.log(error)
+    }
+  );
+}
+function loadObj(url) {
+  objLoader.load(`${url}`,
+    (model) => {
+      // model.scale.set(.01, .01, .01);
+      model.position.set(1, 1, 1)
+      // model.position.set(Number(x), Number(y), Number(z));
+      model.userData = {
+        // ...model.userData, ...el,
+        click: 0,
+      };
+      scene.add(model);
+
+      // addTC2(model);
+    },
+    (xhr) => {
+      console.log(' загрузили obj ')
+    },
+    (error) => {
+      console.log(error)
+    }
+  );
+}
+function getGLTFload(obj) {
+  gltfLoader.load(`${obj.url}`, (gltf) => {
+    let root = gltf.scene;
+    const { x, y, z } = obj.dots;
+    root.rotation.y = obj.rotate;
+    root.userData = {
+      ...root.userData, ...obj,
+      click: 0,
+    };
+
+    root.position.set(Number(x), Number(y), Number(z));
+    scene.add(root);
+    // выбивало ошибку при удалении моделей, делаем проверку на то, состоит ли в сцене модель
+    if (root.parent && root.visible) {
+      root.addEventListener("mousedown", () => addHightLight(root));
+      clickManager.add(root);
+      checkCollisionModels.push(root);
+      wallList.push(root);
+      outlinedArr.push(root);
+    }
+
+  })
+}
 
 //  для клика по стенам и полу
 function onClick(event) {
@@ -952,7 +1381,7 @@ function onClick(event) {
           hideTransformControl(control);
           // dispatchGobalSelectSurface(eventId);
         }
-      } else if (event.object.userData.type === "WALL") {
+      } else if (event.object.userData.type === "WALL" && !control.userData.active) {
         let eventId = intersects[0].object.userData.id;
         let side = Math.floor(event.faceIndex / 2);
         dispatchGlobalSelectWall(eventId, side);
@@ -975,6 +1404,7 @@ function onClick(event) {
 control.addEventListener("mouseUp", (event) => sendPosition(event, transformControledModel));
 window.addEventListener("resize", () => onWindowResize(cameraPersp, renderer));
 canvas.addEventListener("mousedown", onClick);
+
 
 // функции только для three js 
 function main() {
@@ -1011,6 +1441,8 @@ function animate() {
   } else {
     renderer.render(scene, cameraPersp);
   }
+
+  // renderer.render(scene, cameraPersp);
 }
 
-export { clickManager };
+export { clickManager, scene };
